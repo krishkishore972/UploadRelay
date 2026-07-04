@@ -1,159 +1,211 @@
-# Turborepo starter
+# UploadRelay
 
-This Turborepo starter is maintained by the Turborepo core team.
+**Upload once. Review anywhere. Publish directly to YouTube.**
 
-## Using this example
+UploadRelay is a cloud-based collaboration and publishing platform for content creators, video editors, media teams, and agencies. It removes the slowest part of the post-production handoff: forcing a creator to download a huge final video file, review it, and upload the same file again to YouTube.
 
-Run the following command:
+Instead, the editor uploads the final high-quality video once to UploadRelay. The creator reviews a lightweight optimized preview using minimal data, approves the video, and publishes it directly to their connected YouTube channel. UploadRelay transfers the original high-quality file from cloud infrastructure to YouTube, so the creator never has to download or re-upload the video.
 
-```sh
-npx create-turbo@latest
+## The Problem
+
+Modern video teams often work remotely. A common YouTube publishing workflow looks like this:
+
+1. A video editor finishes the final cut.
+2. The editor uploads a large video file to cloud storage.
+3. The creator downloads the file to review it.
+4. The creator requests changes or approves it.
+5. The creator uploads the same large file again to YouTube.
+
+This becomes painful when final files are 5 GB, 10 GB, or larger. It is especially difficult when the creator is travelling, using mobile data, working from a slow connection, or publishing under a deadline.
+
+UploadRelay is designed to make that workflow faster, lighter, and more secure.
+
+## The Solution
+
+UploadRelay acts as a trusted layer between editors and creators:
+
+```text
+Editor uploads the final video once
+              |
+UploadRelay stores the original file securely
+              |
+UploadRelay generates an optimized review preview
+              |
+Creator reviews the preview with minimal data usage
+              |
+Creator approves the final version
+              |
+UploadRelay publishes the original file to YouTube
 ```
 
-## What's inside?
+The creator keeps control of their YouTube channel, while the editor does not need direct channel access and the original file does not need to travel through the creator's device.
 
-This Turborepo includes the following packages/apps:
+## Who It Is For
 
-### Apps and Packages
+- YouTube creators working with remote editors
+- Video editors delivering large final files
+- Creator teams managing review and approval
+- Agencies producing content for client channels
+- Media teams that need a clear approval trail before publishing
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## Core Features
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+### Creator Review
 
-### Utilities
+- Review optimized video previews in the browser
+- Approve final videos without downloading the original file
+- Request changes from editors
+- Review title, description, thumbnail, tags, and publishing settings
+- Track publishing status
 
-This Turborepo has some additional tools already setup for you:
+### Editor Handoff
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+- Upload large original video files
+- Add YouTube metadata and thumbnail assets
+- Submit videos for creator review
+- Upload revised versions when changes are requested
+- Keep the handoff structured in one workspace
+
+### YouTube Publishing
+
+- Connect creator YouTube channels through Google OAuth
+- Publish approved videos directly to YouTube
+- Transfer the original high-quality file from cloud storage
+- Support upload progress, retries, and failure recovery
+- Keep publishing actions tied to an approval flow
+
+### Collaboration And Security
+
+- Workspace-based creator/editor roles
+- Review and approval status tracking
+- Version history
+- Activity logs
+- Private storage for original files
+- Secure handling of YouTube authorization tokens
+
+## MVP Scope
+
+The first version focuses on the complete editor-to-YouTube workflow:
+
+- User authentication
+- Creator and editor roles
+- Workspace creation
+- Team invitations
+- Large video uploads
+- Optimized preview generation
+- Thumbnail and metadata submission
+- Review, approval, and change requests
+- YouTube account connection
+- Direct YouTube publishing
+- Upload progress and retry handling
+- Basic audit logs and notifications
+
+## Monorepo Structure
+
+```text
+UploadRelay/
+|-- apps/
+|   |-- web/       # Frontend application
+|   |-- api/       # Backend API
+|   `-- worker/    # Background processing and publishing worker
+|
+|-- packages/
+|   |-- ui/                    # Shared UI components
+|   |-- eslint-config/         # Shared ESLint configuration
+|   `-- typescript-config/     # Shared TypeScript configuration
+|
+|-- package.json
+|-- turbo.json
+`-- README.md
+```
+
+## Planned Architecture
+
+- **Frontend:** Next.js, React, TypeScript
+- **API:** Node.js service for workspaces, uploads, review, approval, and YouTube integration
+- **Worker:** Background jobs for video processing, preview generation, and YouTube publishing
+- **Storage:** Object storage for original videos, thumbnails, and generated previews
+- **Queue:** Reliable background job processing for uploads and publishing
+- **Database:** Persistent records for users, workspaces, projects, versions, comments, approvals, and publications
+
+## Main Workflow
+
+1. The creator creates a workspace and connects a YouTube channel.
+2. The creator invites an editor.
+3. The editor uploads the original video file and publishing metadata.
+4. UploadRelay generates a lightweight preview.
+5. The creator reviews the preview and metadata.
+6. The creator approves the video or requests changes.
+7. UploadRelay publishes the approved original file to YouTube.
+8. The creator and editor can track publishing progress.
+
+## Local Development
+
+This repository uses Bun workspaces and Turborepo.
+
+### Prerequisites
+
+- Node.js 18 or newer
+- Bun 1.3.13 or newer
+
+### Install Dependencies
+
+```sh
+bun install
+```
+
+### Start Development
+
+```sh
+bun run dev
+```
 
 ### Build
 
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
 ```sh
-cd my-turborepo
-turbo build
+bun run build
 ```
 
-Without global `turbo`, use your package manager:
+### Lint
 
 ```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
+bun run lint
 ```
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+### Check Types
 
 ```sh
-turbo build --filter=docs
+bun run check-types
 ```
 
-Without global `turbo`:
+### Format
 
 ```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
+bun run format
 ```
 
-### Develop
+## Package Scripts
 
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
+```json
+{
+  "build": "turbo run build",
+  "dev": "turbo run dev",
+  "lint": "turbo run lint",
+  "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+  "check-types": "turbo run check-types"
+}
 ```
 
-Without global `turbo`, use your package manager:
+## Product Positioning
 
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
+UploadRelay is not just cloud storage and it is not a general file-sharing tool. It is a focused approval and publishing workflow for creator teams.
 
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+The editor handles the large file. The creator reviews lightly and keeps control. UploadRelay moves the approved original video from the cloud to YouTube.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+## Status
 
-```sh
-turbo dev --filter=web
-```
+UploadRelay is in early development.
 
-Without global `turbo`:
+## Author
 
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Built by **Sabavath Kishore**.
