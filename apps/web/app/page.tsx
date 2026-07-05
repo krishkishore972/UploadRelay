@@ -2,13 +2,14 @@
 
 import { FormEvent, useState } from "react";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
+import { BASE_URL } from "@/lib/utils";
 
 const CHUNK_SIZE = 25 * 1024 * 1024; // 25 MB
 
 export default function Home() {
   const [title, setTitle] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
-
 
   function createVideoChunks(file: File) {
     const chunks: {
@@ -33,7 +34,7 @@ export default function Home() {
     return chunks;
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!title.trim()) {
       alert("Please enter the title");
@@ -44,16 +45,51 @@ export default function Home() {
       return;
     }
     const chunks = createVideoChunks(videoFile);
-    console.log({
-      title: title.trim(),
-      totalChunks: chunks.length,
-      chunks: chunks.map((chunk) => ({
-        partNumber: chunk.partNumber,
-        size: chunk.blob.size,
-        start: chunk.start,
-        end: chunk.end,
-      })),
+
+    const createUploadResponse = await axios.post(
+      `${BASE_URL}/uploads/create`,
+      {
+        fileName: videoFile.name,
+        fileType: videoFile.type,
+        fileSize: videoFile.size,
+      },
+    );
+
+    const createUploadData = createUploadResponse.data;
+    console.log(createUploadData);
+
+    const uploadedParts = [];
+
+    for (const chunk of chunks) {
+      const signedPartResponse = await axios.post(
+        `${BASE_URL}/uploads/sign-part`,
+        {
+          key: createUploadData.key,
+          uploadId: createUploadData.uploadId,
+          partNumber: chunk.partNumber,
+        },
+      );
+
+      const signedPartData = signedPartResponse.data;
+      const uploadPartResponse = await axios.put(
+        signedPartData.signedUrl,
+        chunk.blob,
+      );
+      uploadedParts.push({
+        PartNumber: chunk.partNumber,
+        ETag: uploadPartResponse.headers.etag,
+      });
+      console.log(`Uploaded part ${chunk.partNumber}/${chunks.length}`);
+    }
+    console.log("uploadedParts", uploadedParts);
+    
+
+    const completeResponse = await axios.post(`${BASE_URL}/uploads/complete`, {
+      key: createUploadData.key,
+      uploadId: createUploadData.uploadId,
+      parts: uploadedParts,
     });
+    console.log("completed upload:", completeResponse.data);
   }
 
   return (
