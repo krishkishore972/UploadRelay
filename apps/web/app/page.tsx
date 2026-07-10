@@ -1,9 +1,5 @@
-import { UploadForm } from "@/components/upload/upload-form";
+import { LandingPage } from "@/components/landing/landing-page";
 
 export default function Home() {
-  return (
-    <main>
-      <UploadForm />
-    </main>
-  );
+  return <LandingPage />;
 }

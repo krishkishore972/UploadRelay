@@ -4,10 +4,20 @@ type UploadSummaryProps = {
 
 export function UploadSummary({ file }: UploadSummaryProps) {
   return (
-    <div>
-      <p>{file.name}</p>
-      <p>{formatBytes(file.size)}</p>
-      <p>{file.type}</p>
+    <div className="rounded-lg border border-background-200 bg-background-50/70 p-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-text-950">
+            {file.name}
+          </p>
+          <p className="mt-1 text-sm text-text-800">
+            {file.type || "Unknown video type"}
+          </p>
+        </div>
+        <div className="shrink-0 rounded-md bg-accent-700/10 px-3 py-1.5 text-sm font-medium text-accent-900">
+          {formatBytes(file.size)}
+        </div>
+      </div>
     </div>
   );
 }
