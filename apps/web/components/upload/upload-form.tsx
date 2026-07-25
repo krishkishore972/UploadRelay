@@ -38,6 +38,8 @@ export function UploadForm() {
       alert("Please select a video");
       return;
     }
+    let uploadKey: string | null = null;
+    let uploadId: string | null = null;
 
     try {
       setErrorMessage("");
@@ -56,6 +58,9 @@ export function UploadForm() {
       );
 
       const createUploadData = createUploadResponse.data;
+      uploadKey = createUploadData.key;
+      uploadId = createUploadData.uploadId;
+
       const uploadedParts: UploadedPart[] = [];
       let uploadedBytes = 0;
 
@@ -98,17 +103,33 @@ export function UploadForm() {
 
       setUploadStatus("completing");
 
-      const completeResponse = await axios.post(`${BASE_URL}/uploads/complete`, {
-        key: createUploadData.key,
-        uploadId: createUploadData.uploadId,
-        parts: uploadedParts,
-      });
+      const completeResponse = await axios.post(
+        `${BASE_URL}/uploads/complete`,
+        {
+          key: createUploadData.key,
+          uploadId: createUploadData.uploadId,
+          parts: uploadedParts,
+        },
+      );
 
       console.log("completed upload:", completeResponse.data);
       setUploadProgress(100);
       setUploadStatus("completed");
+      
     } catch (error) {
       console.error(error);
+      if (uploadKey && uploadId) {
+        try {
+          await axios.post(`${BASE_URL}/uploads/abort`, {
+            key: uploadKey,
+            uploadId,
+          });
+
+          console.log("Multipart upload aborted");
+        } catch (abortError) {
+          console.error("Failed to abort multipart upload:", abortError);
+        }
+      }
       setUploadStatus("failed");
       setErrorMessage("Upload failed. Please try again.");
     }

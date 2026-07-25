@@ -1,10 +1,11 @@
-import { json, type Request, type Response } from "express";
+import { type Request, type Response } from "express";
 
 import {
   S3Client,
   CreateMultipartUploadCommand,
   UploadPartCommand,
-  CompleteMultipartUploadCommand
+  CompleteMultipartUploadCommand,
+  AbortMultipartUploadCommand
 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
@@ -149,6 +150,38 @@ export async function completeMultipartUpload(req:Request,res:Response) {
       error: "Failed to complete multipart upload",
     });
   }
+}
+
+export async function abortMultipartUpload(req:Request, res: Response){
+    try {
+      const {key, uploadId} = req.body;
+
+      if (!key || !uploadId) {
+        return res.status(400).json({
+          error:"Key and uploadId are req"
+        })
+      }
+
+      const command = new AbortMultipartUploadCommand({
+       Bucket: process.env.S3_BUCKET_NAME!,
+      Key: key,
+      UploadId: uploadId,
+      })
+      await s3.send(command);
+
+      return res.json({
+        message: " multipart is aborted",
+        key,
+        uploadId
+      });
+
+    } catch (error) {
+      console.error(error);
+
+    return res.status(500).json({
+      error: "Failed to abort multipart upload",
+    });
+    }
 }
 
 
