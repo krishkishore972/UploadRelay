@@ -17,6 +17,7 @@
     "@aws-sdk/s3-request-presigner": "^3.1079.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
+    "bullmq": "^6.0.5",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "nodemon": "^3.1.14"

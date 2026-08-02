@@ -8,6 +8,7 @@ import {
   AbortMultipartUploadCommand
 } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { addTranscodeJob } from "../queues/transcodeQueue";
 
 // controllers/multiPartUpload.ts
 
@@ -136,8 +137,13 @@ export async function completeMultipartUpload(req:Request,res:Response) {
     })
 
     const result = await s3.send(command);
+
+    await addTranscodeJob({
+      sourceKey:key
+    })
+    
     return res.json({
-      message: "Upload completed",
+      message: "Upload completed and transcode job queued",
       location: result.Location,
       key: result.Key,
       bucket: result.Bucket,
