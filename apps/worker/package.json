@@ -9,8 +9,12 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "scripts": {
+    "dev": "bun --watch index.ts"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1095.0",
-    "bullmq": "^6.0.5"
+    "bullmq": "^6.0.5",
+    "ioredis": "^6.0.0"
   }
 }

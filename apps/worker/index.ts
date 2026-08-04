@@ -5,24 +5,29 @@ type TranscodeJobData = {
   sourceKey: string;
 };
 
-const worker = new Worker<TranscodeJobData>("transcode-video", 
+const worker = new Worker<TranscodeJobData>(
+  "transcode-video",
 
-    async (job) => {
-        console.log("Processing transcode job:", job.id);
-        console.log("Source key:", job.data.sourceKey);
-        await transcodeVideo({
-             sourceKey: job.data.sourceKey,
-        });
-        console.log("Transcode job completed:", job.id);
+  async (job) => {
+    console.log("Processing transcode job:", job.id);
+    console.log("Source key:", job.data.sourceKey);
+    const result = await transcodeVideo({
+      sourceKey: job.data.sourceKey,
+    });
+    console.log("Transcode job completed:", job.id);
+    return result;
+  },
+  {
+    connection: {
+      host: process.env.REDIS_HOST ?? "localhost",
+      port: Number(process.env.REDIS_PORT ?? 6379),
     },
-    {
-        connection : {
-            host: process.env.REDIS_HOST ?? "localhost",
-        port: Number(process.env.REDIS_PORT ?? 6379),
-        }
-    }
-
-)
+    lockDuration: 30 * 60 * 1000,
+    stalledInterval: 60 * 1000,
+    maxStalledCount: 1,
+    concurrency: 1,
+  },
+);
 
 worker.on("failed", (job, error) => {
   console.error("Transcode job failed:", job?.id, error);
@@ -33,6 +38,3 @@ worker.on("completed", (job) => {
 });
 
 console.log("Transcode worker is running");
-
-
-
