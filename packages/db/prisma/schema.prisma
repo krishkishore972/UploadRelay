@@ -49,7 +49,8 @@ model User {
   id    String   @id @default(uuid())
   name  String?
   email String   @unique
-  role  UserRole @default(CREATOR)
+  role  UserRole @default(EDITOR)
+  passwordHash String?
 
   uploadedVideos Video[] @relation("EditorVideos")
   creatorVideos  Video[] @relation("CreatorVideos")
@@ -96,7 +97,7 @@ model Video {
 }
 
 model YouTubeConnection {
-  id String @id @default(cuid())
+  id String @id @default(uuid())
 
   userId String @unique
   user   User   @relation(fields: [userId], references: [id])
@@ -116,7 +117,7 @@ model YouTubeConnection {
 }
 
 model PublishJob {
-  id String @id @default(cuid())
+  id String @id @default(uuid())
 
   videoId String
   video   Video  @relation(fields: [videoId], references: [id])

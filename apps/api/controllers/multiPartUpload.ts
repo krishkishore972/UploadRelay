@@ -10,6 +10,8 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { addTranscodeJob } from "../queues/transcodeQueue";
 
+import {prisma} from "@repo/db"
+
 // controllers/multiPartUpload.ts
 
 const s3 = new S3Client({
@@ -61,6 +63,8 @@ export async function createMultipartUpload(req:Request, res: Response){
     })
 
     const result = await s3.send(command);
+
+   
 
     return res.json({
         uploadId: result.UploadId,
