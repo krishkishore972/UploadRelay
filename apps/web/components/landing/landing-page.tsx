@@ -3,12 +3,10 @@ import {
   CheckCircle2,
   CloudUpload,
   FileVideo,
-  FolderKanban,
   LockKeyhole,
   MessageSquareText,
   PlayCircle,
   Send,
-  ShieldCheck,
   UserCheck,
 } from "lucide-react";
 
