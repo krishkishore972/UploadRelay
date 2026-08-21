@@ -1,18 +1,19 @@
 package config
 
 import (
-	"os"
 	"github.com/joho/godotenv"
+	"os"
 )
 
 type Config struct {
-	Port string
-	Env  string
-	DatabaseUrl string
-	AwsRegion string
-	AwsAccessKey string
+	Port               string
+	Env                string
+	DatabaseUrl        string
+	AwsRegion          string
+	AwsAccessKey       string
 	AwsSecretAccessKey string
-	S3BucketName string
+	S3BucketName       string
+	RedisUrl           string
 }
 
 // must pattern && fail fast
@@ -22,37 +23,42 @@ func MustLoad() Config {
 	if port == "" {
 		panic("PORT is required")
 	}
-	env := os.Getenv("ENV");
+	env := os.Getenv("ENV")
 	if env == "" {
 		panic("ENV is required")
 	}
-	databaseurl := os.Getenv("DATABASE_URL");
+	databaseurl := os.Getenv("DATABASE_URL")
 	if databaseurl == "" {
 		panic("DATABASE_URL is required")
 	}
-	awsRegion := os.Getenv("AWS_REGION");
+	awsRegion := os.Getenv("AWS_REGION")
 	if awsRegion == "" {
 		panic("AWS_REGION is required")
 	}
-	awsAccessKey := os.Getenv("AWS_ACCESS_KEY");
+	awsAccessKey := os.Getenv("AWS_ACCESS_KEY")
 	if awsAccessKey == "" {
 		panic("AWS_ACCESS_KEY is required")
 	}
-	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY");
+	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
 	if awsSecretAccessKey == "" {
 		panic("AWS_SECRET_ACCESS_KEY is required")
 	}
-	s3BucketName := os.Getenv("S3_BUCKET_NAME");
+	s3BucketName := os.Getenv("S3_BUCKET_NAME")
 	if s3BucketName == "" {
 		panic("S3_BUCKET_NAME is required")
 	}
+	redisUrl := os.Getenv("REDIS_URL")
+	if redisUrl == "" {
+		panic("REDIS_URL is required")
+	}
 	return Config{
-		Port: port,
-		Env: env,
-		DatabaseUrl: databaseurl,
-		AwsRegion: awsRegion,
-		AwsAccessKey: awsAccessKey,
+		Port:               port,
+		Env:                env,
+		DatabaseUrl:        databaseurl,
+		AwsRegion:          awsRegion,
+		AwsAccessKey:       awsAccessKey,
 		AwsSecretAccessKey: awsSecretAccessKey,
-		S3BucketName: s3BucketName,
+		S3BucketName:       s3BucketName,
+		RedisUrl:           redisUrl,
 	}
 }

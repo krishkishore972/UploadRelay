@@ -38,6 +38,7 @@ export function UploadForm() {
       alert("Please select a video");
       return;
     }
+    
     let uploadKey: string | null = null;
     let uploadId: string | null = null;
 
