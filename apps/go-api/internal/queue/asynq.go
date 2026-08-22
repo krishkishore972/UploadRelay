@@ -6,23 +6,21 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func NewAsynqClient(cfg config.Config) *asynq.Client {
-	return asynq.NewClient(
-		asynq.RedisClientOpt{
-			Addr: cfg.RedisUrl,
-		},
-	)
+func redisOpt(cfg config.Config) asynq.RedisConnOpt {
+	opt, err := asynq.ParseRedisURI(cfg.RedisUrl)
+	if err != nil {
+		panic(err)
+	}
+	return opt
 }
 
+func NewAsynqClient(cfg config.Config) *asynq.Client {
+	return asynq.NewClient(redisOpt(cfg))
+}
 func NewAsynqServer(cfg config.Config) *asynq.Server {
-	return asynq.NewServer(
-		asynq.RedisClientOpt{
-			Addr: cfg.RedisUrl,
-		},
-		asynq.Config{
-			Concurrency: 10,
-		},
-	)
+	return asynq.NewServer(redisOpt(cfg), asynq.Config{
+		Concurrency: 1,
+	})
 }
 
 

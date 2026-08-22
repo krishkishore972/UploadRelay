@@ -1,22 +1,23 @@
 package main
 
 import (
-	"fmt"
 	"go-api/internal/config"
 	"go-api/internal/handlers"
+	"go-api/internal/queue"
 	"log"
 	"net/http"
 	"time"
 )
 
 func main() {
+	log.Println("starting server...")
 	cfg := config.MustLoad()
-
-	fmt.Println("starting server...")
+	asynqClient := queue.NewAsynqClient(cfg)
+	defer asynqClient.Close()
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handlers.Health)
-	multipartHandler, err := handlers.NewMultipartHandler(cfg)
+	multipartHandler, err := handlers.NewMultipartHandler(cfg,asynqClient)
 	if err != nil {
 		log.Fatalf("failed to create multipart handler: %v", err)
 	}
@@ -29,8 +30,8 @@ func main() {
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      withCORS(mux),
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		ReadTimeout:  100 * time.Second,
+		WriteTimeout: 100 * time.Second,
 		IdleTimeout:  30 * time.Second,
 	}
 

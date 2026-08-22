@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-api/internal/config"
+	"go-api/internal/tasks"
+	"log"
 	"net/http"
 	"sort"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/hibiken/asynq"
 )
 
 /*
@@ -41,9 +44,10 @@ type MultipartHandler struct {
 	bucket    string
 	client    *s3.Client
 	presigner *s3.PresignClient
+	queue     *asynq.Client
 }
 
-func NewMultipartHandler(cfg config.Config) (*MultipartHandler, error) {
+func NewMultipartHandler(cfg config.Config,queue *asynq.Client) (*MultipartHandler, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(
 		context.Background(),
 		awsconfig.WithRegion(cfg.AwsRegion),
@@ -59,6 +63,7 @@ func NewMultipartHandler(cfg config.Config) (*MultipartHandler, error) {
 		bucket:    cfg.S3BucketName,
 		client:    client,
 		presigner: presigner,
+		queue: queue,
 	}, nil
 }
 
@@ -102,7 +107,8 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		Key:         aws.String(key),
 		ContentType: aws.String(req.FileType),
 	})
-	fmt.Println("create multi-part upload is done")
+
+	log.Println("create multipart upload is success")
 
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -159,7 +165,9 @@ func (h *MultipartHandler) SignPart(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	fmt.Println("presign is done")
+
+	log.Println("presign is done")
+
 	writeJSON(w, http.StatusOK, SignPartResponse{
 		SignedURL:  result.URL,
 		PartNumber: req.PartNumber,
@@ -227,14 +235,23 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 			Parts: parts,
 		},
 	})
-
+	
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to complete multipart upload",
 		})
 		return
 	}
-	fmt.Println("completed multi_part_upload")
+	log.Println("completed multi part upload")
+	task := tasks.AddTranscodejob(req.Key)
+	if _, err := h.queue.Enqueue(task); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Upload completed but failed to queue transcode job",
+		})
+		return
+	}
+	log.Println("task to added to queue")	
+	
 	writeJSON(w, http.StatusOK, CompleteMultipartUploadResponse{
 		Message:  "Upload completed",
 		Location: aws.ToString(result.Location),
@@ -283,6 +300,8 @@ func (h *MultipartHandler) AbortMultipartUpload(w http.ResponseWriter, r *http.R
 		})
 		return
 	}
+
+	log.Println("aborted the upload")
 
 	writeJSON(w, http.StatusOK, AbortMultipartUploadResponse{
 		Message:  "Multipart upload aborted",
