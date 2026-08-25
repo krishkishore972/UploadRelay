@@ -9,6 +9,7 @@ import { createVideoChunks } from "@/lib/upload/create-video-chunks";
 import type { UploadedPart, UploadStatus } from "@/lib/upload/types";
 import { FilePicker } from "./file-picker";
 import { UploadSummary } from "./upload-summary";
+import { goApi } from "@/lib/go-api";
 
 const statusLabels: Record<UploadStatus, string> = {
   idle: "Waiting for video",
@@ -49,7 +50,7 @@ export function UploadForm() {
 
       const chunks = createVideoChunks(videoFile);
 
-      const createUploadResponse = await axios.post(
+      const createUploadResponse = await goApi.post(
         `${BASE_URL}/uploads/create`,
         {
           fileName: videoFile.name,
@@ -68,7 +69,7 @@ export function UploadForm() {
       setUploadStatus("uploading");
 
       for (const chunk of chunks) {
-        const signedPartResponse = await axios.post(
+        const signedPartResponse = await goApi.post(
           `${BASE_URL}/uploads/sign-part`,
           {
             key: createUploadData.key,
@@ -79,7 +80,7 @@ export function UploadForm() {
 
         const signedPartData = signedPartResponse.data;
 
-        const uploadPartResponse = await axios.put(
+        const uploadPartResponse = await goApi.put(
           signedPartData.signedUrl,
           chunk.blob,
           {
@@ -104,7 +105,7 @@ export function UploadForm() {
 
       setUploadStatus("completing");
 
-      const completeResponse = await axios.post(
+      const completeResponse = await goApi.post(
         `${BASE_URL}/uploads/complete`,
         {
           key: createUploadData.key,
@@ -121,7 +122,7 @@ export function UploadForm() {
       console.error(error);
       if (uploadKey && uploadId) {
         try {
-          await axios.post(`${BASE_URL}/uploads/abort`, {
+          await goApi.post(`${BASE_URL}/uploads/abort`, {
             key: uploadKey,
             uploadId,
           });
