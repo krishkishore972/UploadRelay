@@ -1,10 +1,10 @@
-import NextAuth from "next-auth";
 import { prisma } from "@repo/db";
 import bcrypt from "bcryptjs";
 import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
+import type { NextAuthOptions } from "next-auth";
 
-export const { handlers , auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
@@ -60,6 +60,7 @@ export const { handlers , auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.role = user.role;
       }
+
       return token;
     },
 
@@ -68,12 +69,12 @@ export const { handlers , auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.role = token.role as string;
       }
-      return session
+
+      return session;
     },
   },
-  
-  pages : {
-    signIn:"/login",
-  }
 
-});
+  pages: {
+    signIn: "/login",
+  },
+};

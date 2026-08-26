@@ -51,7 +51,7 @@ export function UploadForm() {
       const chunks = createVideoChunks(videoFile);
 
       const createUploadResponse = await goApi.post(
-        `${BASE_URL}/uploads/create`,
+        "/uploads/create",
         {
           fileName: videoFile.name,
           fileType: videoFile.type,
@@ -70,7 +70,7 @@ export function UploadForm() {
 
       for (const chunk of chunks) {
         const signedPartResponse = await goApi.post(
-          `${BASE_URL}/uploads/sign-part`,
+          "/uploads/sign-part",
           {
             key: createUploadData.key,
             uploadId: createUploadData.uploadId,
@@ -80,7 +80,7 @@ export function UploadForm() {
 
         const signedPartData = signedPartResponse.data;
 
-        const uploadPartResponse = await goApi.put(
+        const uploadPartResponse = await axios.put(
           signedPartData.signedUrl,
           chunk.blob,
           {
@@ -106,7 +106,7 @@ export function UploadForm() {
       setUploadStatus("completing");
 
       const completeResponse = await goApi.post(
-        `${BASE_URL}/uploads/complete`,
+        "/uploads/complete",
         {
           key: createUploadData.key,
           uploadId: createUploadData.uploadId,
@@ -122,7 +122,7 @@ export function UploadForm() {
       console.error(error);
       if (uploadKey && uploadId) {
         try {
-          await goApi.post(`${BASE_URL}/uploads/abort`, {
+          await goApi.post("/uploads/abort", {
             key: uploadKey,
             uploadId,
           });

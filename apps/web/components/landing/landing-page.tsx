@@ -115,12 +115,20 @@ function Header() {
             Roadmap
           </a>
         </nav>
-        <a
-          href="/upload"
-          className="inline-flex h-9 items-center rounded-md bg-primary-700 px-4 text-sm font-semibold text-text-50 transition hover:bg-primary-800"
-        >
-          Open upload
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href="/login"
+            className="inline-flex h-9 items-center rounded-md border border-background-300 bg-background-50 px-3 text-sm font-semibold text-text-950 transition hover:bg-background-100"
+          >
+            Sign in
+          </a>
+          <a
+            href="/signup"
+            className="inline-flex h-9 items-center rounded-md bg-primary-700 px-3 text-sm font-semibold text-text-50 transition hover:bg-primary-800"
+          >
+            Sign up
+          </a>
+        </div>
       </div>
     </header>
   );
@@ -144,8 +152,14 @@ function Hero() {
           </p>
           <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
             <a
-              href="/upload"
+              href="/signup"
               className="inline-flex h-12 items-center justify-center rounded-md bg-primary-700 px-5 text-sm font-semibold text-text-50 transition hover:bg-primary-800"
+            >
+              Create account
+            </a>
+            <a
+              href="/upload"
+              className="inline-flex h-12 items-center justify-center rounded-md border border-background-300 bg-background-50 px-5 text-sm font-semibold text-text-950 transition hover:bg-background-100"
             >
               Test multipart upload
             </a>

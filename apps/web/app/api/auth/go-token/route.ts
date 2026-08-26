@@ -1,17 +1,16 @@
-
-import { auth } from "@/app/auth";
+import { authOptions } from "@/app/auth";
 import { SignJWT } from "jose";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 
 export async function GET() {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const token = await new SignJWT({
-    role: session.user.role,
-  })
+  const token = await new SignJWT({})
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(session.user.id)
     .setIssuedAt()

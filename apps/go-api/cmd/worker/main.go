@@ -15,6 +15,7 @@ import (
 )
 
 func main() {
+	log.Println("worker is running")
 	cfg := config.MustLoad()
 	
 	awscfg,err := awsconfig.LoadDefaultConfig(

@@ -14,6 +14,7 @@ type Config struct {
 	AwsSecretAccessKey string
 	S3BucketName       string
 	RedisUrl           string
+	GoJWTSecret        string
 }
 
 // must pattern && fail fast
@@ -51,6 +52,10 @@ func MustLoad() Config {
 	if redisUrl == "" {
 		panic("REDIS_URL is required")
 	}
+	goJWTString := os.Getenv("GO_JWT_SECRET")
+	if goJWTString == "" {
+		panic("GO_JWT_SECRET is required")
+	}
 	return Config{
 		Port:               port,
 		Env:                env,
@@ -60,5 +65,6 @@ func MustLoad() Config {
 		AwsSecretAccessKey: awsSecretAccessKey,
 		S3BucketName:       s3BucketName,
 		RedisUrl:           redisUrl,
+		GoJWTSecret:        goJWTString,
 	}
 }

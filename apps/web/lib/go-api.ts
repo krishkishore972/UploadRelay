@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const goApi = axios.create({
-  baseURL: process.env.BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_GO_API_URL,
 });
 
 let token: string | null = null;
@@ -9,12 +9,16 @@ let expiresAt = 0;
 
 async function getGoToken() {
   const now = Date.now();
+
   if (token && now < expiresAt) {
     return token;
   }
-  const { data } = await axios.get("/api/auth/go-token"); 
+
+  const { data } = await axios.get("/api/auth/go-token");
+
   token = data.token;
-  expiresAt = now + 14 * 60 * 1000; // slightly under 15m
+  expiresAt = now + 14 * 60 * 1000;
+
   return token;
 }
 
