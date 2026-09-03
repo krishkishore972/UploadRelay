@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"go-api/internal/config"
@@ -45,9 +46,10 @@ type MultipartHandler struct {
 	client    *s3.Client
 	presigner *s3.PresignClient
 	queue     *asynq.Client
+	db        *sql.DB
 }
 
-func NewMultipartHandler(cfg config.Config,queue *asynq.Client) (*MultipartHandler, error) {
+func NewMultipartHandler(cfg config.Config,queue *asynq.Client,db *sql.DB) (*MultipartHandler, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(
 		context.Background(),
 		awsconfig.WithRegion(cfg.AwsRegion),
@@ -64,6 +66,7 @@ func NewMultipartHandler(cfg config.Config,queue *asynq.Client) (*MultipartHandl
 		client:    client,
 		presigner: presigner,
 		queue: queue,
+		db: db,
 	}, nil
 }
 

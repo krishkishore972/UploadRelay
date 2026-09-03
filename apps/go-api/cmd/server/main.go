@@ -2,6 +2,7 @@ package main
 
 import (
 	"go-api/internal/config"
+	"go-api/internal/db"
 	"go-api/internal/handlers"
 	"go-api/internal/middleware"
 	"go-api/internal/queue"
@@ -15,10 +16,18 @@ func main() {
 	cfg := config.MustLoad()
 	asynqClient := queue.NewAsynqClient(cfg)
 	defer asynqClient.Close()
+
+    db, err := db.Connect(cfg.DatabaseUrl)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer db.Close()
+
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handlers.Health)
-	multipartHandler, err := handlers.NewMultipartHandler(cfg,asynqClient)
+
+	multipartHandler, err := handlers.NewMultipartHandler(cfg,asynqClient,db)
 	if err != nil {
 		log.Fatalf("failed to create multipart handler: %v", err)
 	}

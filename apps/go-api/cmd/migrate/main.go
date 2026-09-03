@@ -65,5 +65,5 @@ func main() {
 	default:
 		log.Fatal("Usage: go run ./cmd/migrate <up|down|version|force>")
 	}
-	
+
 }

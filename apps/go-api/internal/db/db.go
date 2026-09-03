@@ -22,6 +22,7 @@ func Connect(databaseurl string) (*sql.DB, error) {
 	defer cancel()
 	
 	if err := db.PingContext(ctx); err != nil {
+		db.Close()
 		return nil, fmt.Errorf("ping: %w",err)
 	}
 
