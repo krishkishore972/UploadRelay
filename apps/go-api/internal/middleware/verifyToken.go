@@ -88,6 +88,5 @@ func UserIDFromContext(ctx context.Context) (string, bool) {
 	if !ok || claims.Subject == "" {
 		return "", false
 	}
-
 	return claims.Subject, true
 }

@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"go-api/internal/middleware"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
@@ -49,7 +51,7 @@ type MultipartHandler struct {
 	db        *sql.DB
 }
 
-func NewMultipartHandler(cfg config.Config,queue *asynq.Client,db *sql.DB) (*MultipartHandler, error) {
+func NewMultipartHandler(cfg config.Config, queue *asynq.Client, db *sql.DB) (*MultipartHandler, error) {
 	awsCfg, err := awsconfig.LoadDefaultConfig(
 		context.Background(),
 		awsconfig.WithRegion(cfg.AwsRegion),
@@ -65,8 +67,8 @@ func NewMultipartHandler(cfg config.Config,queue *asynq.Client,db *sql.DB) (*Mul
 		bucket:    cfg.S3BucketName,
 		client:    client,
 		presigner: presigner,
-		queue: queue,
-		db: db,
+		queue:     queue,
+		db:        db,
 	}, nil
 }
 
@@ -77,6 +79,7 @@ type CreateMultipartUploadRequest struct {
 }
 
 type CreateMultipartUploadResponse struct {
+	VideoID  string `json:"videoId"`
 	Key      string `json:"key"`
 	UploadID string `json:"uploadId"`
 }
@@ -103,6 +106,14 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get user ID",
+		})
+		return
+	}
+
 	key := fmt.Sprintf("uploads/%d-%s", time.Now().UnixMilli(), req.FileName)
 
 	result, err := h.client.CreateMultipartUpload(r.Context(), &s3.CreateMultipartUploadInput{
@@ -111,8 +122,6 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		ContentType: aws.String(req.FileType),
 	})
 
-	log.Println("create multipart upload is success")
-
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to create multipart upload",
@@ -120,9 +129,45 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
+	uploadID := aws.ToString(result.UploadId)
+
+	var videoID string
+	err = h.db.QueryRowContext(
+		r.Context(),
+		`
+		INSERT INTO "Video" (
+			"editorId",
+			"creatorId",
+			"originalFileName",
+			"originalS3Key",
+			"originalMimeType",
+			"originalSize",
+			"uploadId",
+			"status",
+			"updatedAt"
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, 'UPLOADING', CURRENT_TIMESTAMP)
+		RETURNING "id"
+		`,
+		userID,
+		userID,
+		req.FileName,
+		key,
+		req.FileType,
+		req.FileSize,
+		uploadID,
+	).Scan(&videoID)
+
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to create video record",
+		})
+		return
+	}
+	log.Println("multipart upload is inserted into database")
 	writeJSON(w, http.StatusOK, CreateMultipartUploadResponse{
 		Key:      key,
-		UploadID: aws.ToString(result.UploadId),
+		UploadID: uploadID,
 	})
 }
 
@@ -161,7 +206,6 @@ func (h *MultipartHandler) SignPart(w http.ResponseWriter, r *http.Request) {
 		PartNumber: aws.Int32(req.PartNumber),
 	}, s3.WithPresignExpires(10*time.Minute))
 
-
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to sign upload part",
@@ -183,6 +227,7 @@ type CompletedPartRequest struct {
 }
 
 type CompleteMultipartUploadRequest struct {
+	VideoID  string                 `json:"videoId"`
 	Key      string                 `json:"key"`
 	UploadID string                 `json:"uploadId"`
 	Parts    []CompletedPartRequest `json:"parts"`
@@ -204,9 +249,17 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 		return
 	}
 
-	if req.Key == "" || req.UploadID == "" || len(req.Parts) == 0 {
+	if req.Key == "" || req.UploadID == "" || req.VideoID == "" || len(req.Parts) == 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "key, uploadId and parts are required",
+			"error": "VideoId,key, uploadId and parts are required",
+		})
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "Unauthorized",
 		})
 		return
 	}
@@ -238,14 +291,39 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 			Parts: parts,
 		},
 	})
-	
+
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to complete multipart upload",
 		})
 		return
 	}
+	_, err = h.db.ExecContext(r.Context(),
+		`
+	UPDATE "Video"
+	SET
+		"status" = "UPLOADED"
+		"updatedAt" = CURRENT_TIMESTAMP
+	WHERE
+		"id" = $1
+		AND "editorId" = $2
+		AND "originalS3Key" = $3
+		AND "uploadId" = $4
+	`,
+		req.VideoID,
+		userID,
+		req.Key,
+		req.UploadID,
+	)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Upload completed but failed to update video record",
+		})
+		return
+	}
 	log.Println("completed multi part upload")
+	//TODO :- Later, better version is to queue videoId too, so worker can update:
+	//TRANSCODING -> PREVIEW_READY / TRANSCODE_FAILED
 	task := tasks.AddTranscodejob(req.Key)
 	if _, err := h.queue.Enqueue(task); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
@@ -253,8 +331,8 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 		})
 		return
 	}
-	log.Println("task to added to queue")	
-	
+	log.Println("task to added to queue")
+
 	writeJSON(w, http.StatusOK, CompleteMultipartUploadResponse{
 		Message:  "Upload completed",
 		Location: aws.ToString(result.Location),
@@ -265,6 +343,7 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 }
 
 type AbortMultipartUploadRequest struct {
+	VideoID  string `json:"videoId"`
 	Key      string `json:"key"`
 	UploadID string `json:"uploadId"`
 }
@@ -285,9 +364,17 @@ func (h *MultipartHandler) AbortMultipartUpload(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	if req.Key == "" || req.UploadID == "" {
+	if req.Key == "" || req.UploadID == "" || req.VideoID == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "key and uploadId are required",
+			"error": "videoId, key and uploadId are required",
+		})
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "Unauthorized",
 		})
 		return
 	}
@@ -300,6 +387,46 @@ func (h *MultipartHandler) AbortMultipartUpload(w http.ResponseWriter, r *http.R
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to abort multipart upload",
+		})
+		return
+	}
+
+	result, err := h.db.ExecContext(
+		r.Context(),
+		`
+		UPDATE "Video"
+		SET
+			"status" = 'UPLOAD_ABORTED',
+			"updatedAt" = CURRENT_TIMESTAMP
+		WHERE
+			"id" = $1
+			AND "editorId" = $2
+			AND "originalS3Key" = $3
+			AND "uploadId" = $4
+		`,
+		req.VideoID,
+		userID,
+		req.Key,
+		req.UploadID,
+	)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Upload aborted but failed to update video record",
+		})
+		return
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to verify video update",
+		})
+		return
+	}
+
+	if rowsAffected != 1 {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Video not found",
 		})
 		return
 	}
