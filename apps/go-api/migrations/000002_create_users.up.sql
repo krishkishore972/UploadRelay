@@ -1,0 +1,9 @@
+CREATE TABLE "User" (
+  "id" TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  "name" TEXT,
+  "email" TEXT NOT NULL UNIQUE,
+  "role" "UserRole" NOT NULL DEFAULT 'EDITOR',
+  "passwordHash" TEXT,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

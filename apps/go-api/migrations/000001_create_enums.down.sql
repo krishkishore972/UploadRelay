@@ -1,0 +1,4 @@
+DROP TYPE IF EXISTS "YouTubePrivacy";
+DROP TYPE IF EXISTS "PublishStatus";
+DROP TYPE IF EXISTS "UserRole";
+DROP TYPE IF EXISTS "VideoStatus";
