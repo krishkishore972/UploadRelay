@@ -14,9 +14,5 @@ migrate-up:
 migrate-down:
 	@go run cmd/migrate/main.go down
 
-migrate-reset:
-	@go run cmd/migrate/main.go reset
-
-migrate-status:
-	@go run cmd/migrate/main.go status
-
+migrate-version:
+	@go run cmd/migrate/main.go version
