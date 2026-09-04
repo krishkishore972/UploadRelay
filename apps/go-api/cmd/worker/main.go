@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"go-api/internal/config"
+	"go-api/internal/db"
 	"go-api/internal/queue"
 
 	"go-api/internal/tasks"
@@ -17,27 +18,34 @@ import (
 func main() {
 	log.Println("worker is running")
 	cfg := config.MustLoad()
-	
-	awscfg,err := awsconfig.LoadDefaultConfig(
+
+	database, err := db.Connect(cfg.DatabaseUrl)
+
+	if err != nil {
+		log.Fatalf("failed to connect db : %v", err)
+	}
+	defer database.Close()
+
+	awscfg, err := awsconfig.LoadDefaultConfig(
 		context.Background(),
 		awsconfig.WithRegion(cfg.AwsRegion),
 	)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	processor := &tasks.Processor{
-		S3: s3.NewFromConfig(awscfg),
+		S3:     s3.NewFromConfig(awscfg),
 		Bucket: cfg.S3BucketName,
+		DB:     database,
 	}
-	
+
 	srv := queue.NewAsynqServer(cfg)
 	log.Println("worker server is started")
-	
-	mux := asynq.NewServeMux()
-	mux.HandleFunc(tasks.TypeVideoTranscode,processor.HandleVideoTranscode)
 
+	mux := asynq.NewServeMux()
+	mux.HandleFunc(tasks.TypeVideoTranscode, processor.HandleVideoTranscode)
 
 	log.Println("asynq worker listening for video:transcode")
 	if err := srv.Run(mux); err != nil {

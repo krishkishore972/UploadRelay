@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go-api/internal/config"
 	"go-api/internal/tasks"
@@ -19,6 +20,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/google/uuid"
 	"github.com/hibiken/asynq"
 )
 
@@ -52,13 +54,22 @@ type MultipartHandler struct {
 }
 
 func NewMultipartHandler(cfg config.Config, queue *asynq.Client, db *sql.DB) (*MultipartHandler, error) {
+	if db == nil {
+		return nil, errors.New("db is required")
+	}
+	if queue == nil {
+		return nil, errors.New("queue is required")
+	}
+	if cfg.S3BucketName == "" {
+		return nil, errors.New("s3 bucket name is required")
+	}
+
 	awsCfg, err := awsconfig.LoadDefaultConfig(
 		context.Background(),
 		awsconfig.WithRegion(cfg.AwsRegion),
 	)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("load aws config: %w", err)
 	}
 
 	client := s3.NewFromConfig(awsCfg)
@@ -76,6 +87,7 @@ type CreateMultipartUploadRequest struct {
 	FileName string `json:"fileName"`
 	FileType string `json:"fileType"`
 	FileSize int64  `json:"fileSize"`
+	Title    string `json:"title"`
 }
 
 type CreateMultipartUploadResponse struct {
@@ -108,13 +120,22 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
-		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Failed to get user ID",
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "Unauthorized",
 		})
 		return
 	}
 
-	key := fmt.Sprintf("uploads/%d-%s", time.Now().UnixMilli(), req.FileName)
+	/*
+		This is acceptable, but the folder shape is a little noisy. A cleaner future shape would be:
+		uploads/{videoID}/original.mp4
+		previews/{videoID}/master.m3u8
+		previews/{videoID}/stream_360p/...
+		previews/{videoID}/stream_720p/...
+		That would make S3 easier to reason about because the Video.id becomes the stable object namespace.
+	*/
+
+	key := fmt.Sprintf("uploads/%s/%s-%s", userID, uuid.NewString(), req.FileName)
 
 	result, err := h.client.CreateMultipartUpload(r.Context(), &s3.CreateMultipartUploadInput{
 		Bucket:      aws.String(h.bucket),
@@ -124,7 +145,7 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
-			"error": "Failed to create multipart upload",
+			"error": "internal server error",
 		})
 		return
 	}
@@ -132,6 +153,11 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 	uploadID := aws.ToString(result.UploadId)
 
 	var videoID string
+	/*
+		both editorId and creatorId to userID.
+		That is okay for solo-MVP testing, but it is not correct for real creator/editor workflow.
+		Later creatorId should come from selected creator/workspace/invite relationship.
+	*/
 	err = h.db.QueryRowContext(
 		r.Context(),
 		`
@@ -143,10 +169,11 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 			"originalMimeType",
 			"originalSize",
 			"uploadId",
+			"title",
 			"status",
 			"updatedAt"
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, 'UPLOADING', CURRENT_TIMESTAMP)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'UPLOADING', CURRENT_TIMESTAMP)
 		RETURNING "id"
 		`,
 		userID,
@@ -156,22 +183,35 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		req.FileType,
 		req.FileSize,
 		uploadID,
+		req.Title,
 	).Scan(&videoID)
 
 	if err != nil {
+		_, abortErr := h.client.AbortMultipartUpload(r.Context(),
+			&s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(h.bucket),
+				Key:      aws.String(key),
+				UploadId: aws.String(uploadID),
+			})
+		if abortErr != nil {
+			log.Printf("failed to cleanup multipart upload after db insert error: %v", abortErr)
+		}
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to create video record",
 		})
 		return
 	}
 	log.Println("multipart upload is inserted into database")
+
 	writeJSON(w, http.StatusOK, CreateMultipartUploadResponse{
+		VideoID:  videoID,
 		Key:      key,
 		UploadID: uploadID,
 	})
 }
 
 type SignPartRequest struct {
+	VideoID    string `json:"videoId"`
 	Key        string `json:"key"`
 	UploadID   string `json:"uploadId"`
 	PartNumber int32  `json:"partNumber"`
@@ -183,6 +223,7 @@ type SignPartResponse struct {
 }
 
 func (h *MultipartHandler) SignPart(w http.ResponseWriter, r *http.Request) {
+
 	var req SignPartRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -192,9 +233,49 @@ func (h *MultipartHandler) SignPart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Key == "" || req.UploadID == "" || req.PartNumber <= 0 {
+	if req.VideoID == "" || req.Key == "" || req.UploadID == "" || req.PartNumber <= 0 {
 		writeJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "key, uploadId and partNumber are required",
+			"error": "VideoId, key, uploadId and partNumber are required",
+		})
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{
+			"error": "Unauthorized",
+		})
+		return
+	}
+
+	var videoID string
+
+	err := h.db.QueryRowContext(r.Context(),
+		`
+	SELECT "id"
+	FROM "Video"
+	WHERE 
+		"id" = $1
+		AND "editorId" = $2
+		AND "originalS3Key" = $3
+		AND "uploadId" = $4
+		AND "status" = 'UPLOADING'
+	`,
+		req.VideoID,
+		userID,
+		req.Key,
+		req.UploadID,
+	).Scan(&videoID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Video not found",
+		})
+		return
+	}
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to verify upload",
 		})
 		return
 	}
@@ -264,6 +345,40 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 		return
 	}
 
+	var videoID string
+
+	err := h.db.QueryRowContext(
+		r.Context(),
+		`
+	SELECT "id"
+	FROM "Video"
+	WHERE
+		"id" = $1
+		AND "editorId" = $2
+		AND "originalS3Key" = $3
+		AND "uploadId" = $4
+		AND "status" = 'UPLOADING'
+	`,
+		req.VideoID,
+		userID,
+		req.Key,
+		req.UploadID,
+	).Scan(&videoID)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Video not found",
+		})
+		return
+	}
+
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to verify upload",
+		})
+		return
+	}
+
 	sort.Slice(req.Parts, func(i, j int) bool {
 		return req.Parts[i].PartNumber < req.Parts[j].PartNumber
 	})
@@ -298,17 +413,18 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 		})
 		return
 	}
-	_, err = h.db.ExecContext(r.Context(),
+	updateResult, err := h.db.ExecContext(r.Context(),
 		`
 	UPDATE "Video"
-	SET
-		"status" = "UPLOADED"
-		"updatedAt" = CURRENT_TIMESTAMP
-	WHERE
-		"id" = $1
-		AND "editorId" = $2
-		AND "originalS3Key" = $3
-		AND "uploadId" = $4
+SET
+    "status" = 'UPLOADED',
+    "updatedAt" = CURRENT_TIMESTAMP
+WHERE
+    "id" = $1
+    AND "editorId" = $2
+    AND "originalS3Key" = $3
+    AND "uploadId" = $4
+	AND "status" = 'UPLOADING'
 	`,
 		req.VideoID,
 		userID,
@@ -321,10 +437,35 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 		})
 		return
 	}
+
+	rowsAffected, err := updateResult.RowsAffected()
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to verify video update",
+		})
+		return
+	}
+
+	if rowsAffected != 1 {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Video not found",
+		})
+		return
+	}
+
 	log.Println("completed multi part upload")
 	//TODO :- Later, better version is to queue videoId too, so worker can update:
 	//TRANSCODING -> PREVIEW_READY / TRANSCODE_FAILED
-	task := tasks.AddTranscodejob(req.Key)
+
+	/*
+		transcode task only receives req.Key.
+		The worker cannot update DB status to TRANSCODING, PREVIEW_READY, or TRANSCODE_FAILED.
+		Queue should include both:
+		videoID
+		sourceKey
+
+	*/
+	task := tasks.AddTranscodejob(req.VideoID, req.Key)
 	if _, err := h.queue.Enqueue(task); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Upload completed but failed to queue transcode job",
@@ -379,11 +520,46 @@ func (h *MultipartHandler) AbortMultipartUpload(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	_, err := h.client.AbortMultipartUpload(r.Context(), &s3.AbortMultipartUploadInput{
+	var videoID string
+
+	err := h.db.QueryRowContext(
+		r.Context(),
+		`
+		SELECT "id"
+		FROM "Video"
+		WHERE
+			"id" = $1
+			AND "editorId" = $2
+			AND "originalS3Key" = $3
+			AND "uploadId" = $4
+			AND "status" = 'UPLOADING'
+		`,
+		req.VideoID,
+		userID,
+		req.Key,
+		req.UploadID,
+	).Scan(&videoID)
+	
+	if errors.Is(err, sql.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, map[string]string{
+			"error": "Video not found",
+		})
+		return
+	}
+	
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to verify upload",
+		})
+		return
+	}
+
+	_, err = h.client.AbortMultipartUpload(r.Context(), &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(h.bucket),
 		Key:      aws.String(req.Key),
 		UploadId: aws.String(req.UploadID),
 	})
+
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "Failed to abort multipart upload",
@@ -403,6 +579,7 @@ func (h *MultipartHandler) AbortMultipartUpload(w http.ResponseWriter, r *http.R
 			AND "editorId" = $2
 			AND "originalS3Key" = $3
 			AND "uploadId" = $4
+			AND "status" = 'UPLOADING'
 		`,
 		req.VideoID,
 		userID,
@@ -441,6 +618,7 @@ func (h *MultipartHandler) AbortMultipartUpload(w http.ResponseWriter, r *http.R
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {
+	//helper is fine for MVP. Later you may want to log JSON encoding errors, but this is not urgent.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)

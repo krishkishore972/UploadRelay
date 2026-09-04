@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
@@ -17,10 +18,10 @@ import (
 	"github.com/google/uuid"
 )
 
-
 type Processor struct {
-	S3  *s3.Client
+	S3     *s3.Client
 	Bucket string
+	DB     *sql.DB
 }
 
 /*
@@ -54,17 +55,16 @@ previews/...
 */
 
 func (p *Processor) TranscodeVideo(ctx context.Context, sourceKey string) error {
-	if sourceKey =="" {
-		return fmt.Errorf("source_key is required")	
+	if sourceKey == "" {
+		return fmt.Errorf("source_key is required")
 	}
 
-	workDir := filepath.Join(os.TempDir(),"uploadRelay",uuid.NewString())
-	inputPath := filepath.Join(workDir,fileNameFromKey(sourceKey))
-	hlsDir := filepath.Join(workDir,"hls")
+	workDir := filepath.Join(os.TempDir(), "uploadRelay", uuid.NewString())
+	inputPath := filepath.Join(workDir, fileNameFromKey(sourceKey))
+	hlsDir := filepath.Join(workDir, "hls")
 	previewPrefix := createPreviewPrefix(sourceKey)
-	masterKey := path.Join(previewPrefix,"master.m3u8")
+	masterKey := path.Join(previewPrefix, "master.m3u8")
 
-	
 	if err := os.MkdirAll(filepath.Join(hlsDir, "stream_360p"), 0o755); err != nil {
 		return err
 	}
@@ -96,9 +96,9 @@ func (p *Processor) TranscodeVideo(ctx context.Context, sourceKey string) error 
 	return nil
 }
 
-func (p *Processor) downloadFromS3(ctx context.Context,key,dest string) error {
-	out,err := p.S3.GetObject(ctx,&s3.GetObjectInput{
-		Key: aws.String(key),
+func (p *Processor) downloadFromS3(ctx context.Context, key, dest string) error {
+	out, err := p.S3.GetObject(ctx, &s3.GetObjectInput{
+		Key:    aws.String(key),
 		Bucket: aws.String(p.Bucket),
 	})
 	if err != nil {
@@ -152,7 +152,6 @@ func createHLSPreview(ctx context.Context, inputPath, outputDir string) error {
 	}
 	return nil
 }
-
 
 func (p *Processor) uploadDirToS3(ctx context.Context, localDir, s3Prefix string) error {
 	return filepath.Walk(localDir, func(fp string, info os.FileInfo, err error) error {

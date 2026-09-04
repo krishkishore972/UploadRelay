@@ -4,7 +4,6 @@ import { FormEvent, useState } from "react";
 import axios from "axios";
 
 import { Button } from "@/components/ui/button";
-import { BASE_URL } from "@/lib/utils";
 import { createVideoChunks } from "@/lib/upload/create-video-chunks";
 import type { UploadedPart, UploadStatus } from "@/lib/upload/types";
 import { FilePicker } from "./file-picker";
@@ -40,6 +39,7 @@ export function UploadForm() {
       return;
     }
     
+    let videoId: string | null = null;
     let uploadKey: string | null = null;
     let uploadId: string | null = null;
 
@@ -56,12 +56,14 @@ export function UploadForm() {
           fileName: videoFile.name,
           fileType: videoFile.type,
           fileSize: videoFile.size,
+          title: title
         },
       );
 
       const createUploadData = createUploadResponse.data;
       uploadKey = createUploadData.key;
       uploadId = createUploadData.uploadId;
+      videoId = createUploadData.videoId;
 
       const uploadedParts: UploadedPart[] = [];
       let uploadedBytes = 0;
@@ -72,6 +74,7 @@ export function UploadForm() {
         const signedPartResponse = await goApi.post(
           "/uploads/sign-part",
           {
+            videoId: createUploadData.videoId,
             key: createUploadData.key,
             uploadId: createUploadData.uploadId,
             partNumber: chunk.partNumber,
@@ -108,6 +111,7 @@ export function UploadForm() {
       const completeResponse = await goApi.post(
         "/uploads/complete",
         {
+          videoId: createUploadData.videoId,
           key: createUploadData.key,
           uploadId: createUploadData.uploadId,
           parts: uploadedParts,
@@ -120,18 +124,20 @@ export function UploadForm() {
       
     } catch (error) {
       console.error(error);
-      if (uploadKey && uploadId) {
+
+      if (videoId && uploadKey && uploadId) {
         try {
           await goApi.post("/uploads/abort", {
+            videoId,
             key: uploadKey,
             uploadId,
           });
-
           console.log("Multipart upload aborted");
         } catch (abortError) {
           console.error("Failed to abort multipart upload:", abortError);
         }
       }
+
       setUploadStatus("failed");
       setErrorMessage("Upload failed. Please try again.");
     }

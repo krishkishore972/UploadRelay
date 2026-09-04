@@ -7,11 +7,13 @@ import (
 )
 
 type VideoTranscodePayload struct {
+	VideoID   string `json:"video_id"`
 	SourceKey string `json:"source_key"`
 }
 
-func AddTranscodejob(sourceKey string) *asynq.Task {
+func AddTranscodejob(videoID, sourceKey string) *asynq.Task {
 	payload := VideoTranscodePayload{
+		VideoID:   videoID,
 		SourceKey: sourceKey,
 	}
 	data,err := json.Marshal(payload)
