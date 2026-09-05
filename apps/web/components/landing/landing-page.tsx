@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useState } from "react";
 import {
   Clock3,
   Globe2,
@@ -10,6 +11,8 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 import { ds } from "@/lib/design-system";
 import { FadeUp, Stagger, StaggerItem } from "@/components/motion/primitives";
@@ -31,34 +34,65 @@ const fileRows = [
   ["PNG", "Master_Thumbnail_A_B_Test.png", "4.1 MB", "green"],
 ];
 
-const featureCards = [
+const teams = [
+  {
+    id: "Strategy",
+    blurb:
+      "Orchestrate multi-region launches from a single controlled handoff of campaign masters.",
+  },
+  {
+    id: "Creators",
+    blurb:
+      "Keep channel credentials private while editors move and stage files for you.",
+  },
+  {
+    id: "Post Houses",
+    blurb:
+      "Close review loops on lightweight previews instead of 20 GB downloads.",
+  },
+  {
+    id: "Media",
+    blurb:
+      "Dispatch approved masters straight to YouTube at launch scale.",
+  },
+] as const;
+
+type TeamId = (typeof teams)[number]["id"];
+
+const featureCards: {
+  eyebrow: string;
+  title: string;
+  body: string;
+  tone: string;
+  teams: TeamId[];
+}[] = [
   {
     eyebrow: "Vault",
     title: "Campaign Master Cuts",
     body: "ProRes 422 and DNxHR cloud staging without creator-side bandwidth pain.",
     tone: "from-black via-neutral-900/90 to-neutral-800",
-    accent: "text-amber-400",
+    teams: ["Strategy", "Post Houses"],
   },
   {
     eyebrow: "Review",
     title: "Frame Review",
     body: "Preview-first approval keeps the original in S3 while creators review a lighter stream.",
     tone: "from-[#282115] via-neutral-900 to-black",
-    accent: "text-orange-400",
+    teams: ["Post Houses", "Creators"],
   },
   {
     eyebrow: "Security",
     title: "Creator Control",
     body: "Editors never need channel credentials. Publishing waits for creator approval.",
     tone: "from-[#17222a] via-neutral-950 to-black",
-    accent: "text-sky-400",
+    teams: ["Creators"],
   },
   {
     eyebrow: "Dispatch",
     title: "Direct YouTube Pipeline",
     body: "Approved originals move from cloud storage to YouTube ingestion servers.",
     tone: "from-[#221c27] via-neutral-900 to-black",
-    accent: "text-emerald-400",
+    teams: ["Media", "Strategy"],
   },
 ];
 
@@ -103,6 +137,31 @@ export function LandingPage() {
   );
 }
 
+function RelaySignal({
+  variant = "light",
+  className = "",
+}: {
+  variant?: "light" | "dark";
+  className?: string;
+}) {
+  const dark = variant === "dark";
+  const dot = dark ? "bg-neutral-600" : "bg-neutral-300";
+  const line = dark ? "bg-neutral-700" : "bg-neutral-300";
+
+  return (
+    <div
+      className={`flex w-full items-center gap-2 ${className}`}
+      aria-hidden="true"
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+      <span className={`h-px flex-1 ${line}`} />
+      <span className="h-2 w-2 rounded-full bg-brand-accent" />
+      <span className={`h-px flex-1 ${line}`} />
+      <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+    </div>
+  );
+}
+
 function FloatingNav() {
   return (
     <motion.header
@@ -142,7 +201,7 @@ function FloatingNav() {
         </div>
 
         <Link
-href="/auth?mode=signup"
+          href="/auth?mode=signup"
           className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-neutral-200"
         >
           Get started
@@ -181,7 +240,7 @@ function HeroSection() {
         </StaggerItem>
       </Stagger>
 
-      <FadeUp mount y={32} delay={0.25} className="mx-auto mt-12 w-full max-w-5xl rounded-3xl bg-gradient-to-b from-neutral-300 via-neutral-200 to-transparent p-1.5 shadow-2xl sm:p-2 md:mt-16">
+      <FadeUp mount y={32} delay={0.25} className="mx-auto mt-12 w-full max-w-5xl rounded-[28px] bg-neutral-950 p-1.5 shadow-2xl ring-1 ring-white/10 sm:p-2 md:mt-16">
         <div className="hero-glow-container flex h-72 w-full items-center justify-center rounded-[22px] p-6 text-white shadow-inner sm:h-96 md:h-[480px]">
           <div className="relative z-10 w-full max-w-xl rounded-2xl border border-white/20 bg-black/40 p-6 text-left shadow-2xl backdrop-blur-xl">
             <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-4">
@@ -221,19 +280,37 @@ function HeroSection() {
             </div>
           </div>
         </div>
+        <div className="flex items-center justify-between px-4 py-2.5 text-[10px] font-medium text-neutral-400">
+          <span className="flex items-center gap-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
+            REC · RELAY_PIPELINE
+          </span>
+          <span className="hidden font-mono sm:inline">
+            04K_MASTER.mov · S3 us-east-1
+          </span>
+        </div>
       </FadeUp>
 
-      <FadeUp mount y={18} delay={0.35}>
-        <div className="mt-20 border-t border-neutral-200/80 pt-8">
-          <p className={`${ds.label} mb-8 text-neutral-600`}>
+      <FadeUp mount y={16} delay={0.42} className="mx-auto mt-14 w-full max-w-sm">
+        <RelaySignal />
+      </FadeUp>
+
+      <FadeUp mount y={18} delay={0.48}>
+        <div className="mt-14 border-t border-neutral-200/80 pt-8">
+          <p className={`${ds.label} mb-8 text-center text-neutral-600`}>
             Trusted by high-throughput creator networks and post-production studios
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-semibold tracking-wider text-neutral-600 sm:gap-14">
-            {partners.map((partner) => (
-              <span key={partner} className="transition-colors hover:text-neutral-900">
-                {partner}
-              </span>
-            ))}
+          <div className="marquee-mask overflow-hidden">
+            <div className="animate-marquee flex w-max items-center hover:[animation-play-state:paused]">
+              {[...partners, ...partners].map((partner, index) => (
+                <span
+                  key={`${partner}-${index}`}
+                  className="mr-16 text-sm font-semibold tracking-wider text-neutral-600 transition-colors hover:text-neutral-900"
+                >
+                  {partner}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </FadeUp>
@@ -503,6 +580,11 @@ function FeatureList({ items }: { items: string[][] }) {
 }
 
 function UseCasesSection() {
+  const reduceMotion = useReducedMotion();
+  const [active, setActive] = useState<TeamId>("Strategy");
+  const meta = teams.find((team) => team.id === active)!;
+  const visible = featureCards.filter((card) => card.teams.includes(active));
+
   return (
     <section id="workflow" className="bg-white px-4 py-20 md:py-28">
       <div className="mx-auto max-w-5xl">
@@ -511,36 +593,70 @@ function UseCasesSection() {
             <h2 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
               Built for every team.
             </h2>
-            <div className="inline-flex items-center rounded-full border border-neutral-200/80 bg-neutral-100 p-1 text-xs">
-              {["Strategy", "Creators", "Post Houses", "Media"].map((item, index) => (
+            <div
+              role="tablist"
+              aria-label="Teams"
+              className="inline-flex items-center rounded-full border border-neutral-200/80 bg-neutral-100 p-1 text-xs"
+            >
+              {teams.map((team) => (
                 <button
-                  key={item}
+                  key={team.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active === team.id}
+                  onClick={() => setActive(team.id)}
                   className={`rounded-full px-4 py-1.5 font-medium transition-colors ${
-                    index === 0
+                    active === team.id
                       ? "bg-black text-white shadow-sm"
                       : "text-neutral-600 hover:text-neutral-900"
                   }`}
-                  type="button"
                 >
-                  {item}
+                  {team.id}
                 </button>
               ))}
             </div>
           </div>
         </FadeUp>
 
-        <Stagger className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {featureCards.map((card) => (
-            <StaggerItem key={card.title}>
-              <article
-                className={`${ds.darkCard} group relative flex h-64 flex-col justify-end overflow-hidden p-6 sm:h-72`}
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={active}
+            initial={{ opacity: 0, y: reduceMotion ? 0 : 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: reduceMotion ? 0 : -6 }}
+            transition={{ duration: 0.25, ease: EASE }}
+            className="mx-auto mt-6 max-w-md px-4 text-center text-sm text-neutral-500"
+          >
+            {meta.blurb}
+          </motion.p>
+        </AnimatePresence>
+
+        <motion.div layout className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <AnimatePresence mode="popLayout">
+            {visible.map((card) => (
+              <motion.article
+                layout
+                key={card.title}
+                initial={{
+                  opacity: 0,
+                  y: reduceMotion ? 0 : 20,
+                  scale: reduceMotion ? 1 : 0.98,
+                }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.97 }}
+                transition={{ duration: 0.45, ease: EASE }}
+                className={`${ds.darkCard} group relative flex h-64 flex-col justify-end overflow-hidden p-6 sm:h-72 ${
+                  visible.length === 1 ? "md:col-span-2" : ""
+                }`}
               >
                 <div
                   className={`absolute inset-0 bg-gradient-to-tr ${card.tone} opacity-95 transition-transform duration-500 group-hover:scale-105`}
                 />
                 <div className="absolute right-6 top-6 h-20 w-20 rounded-full bg-gradient-to-br from-amber-400 to-brand-accent opacity-30 blur-lg" />
                 <div className="relative z-10">
-                  <span className={`${ds.mono} uppercase tracking-widest ${card.accent}`}>
+                  <span
+                    className={`${ds.mono} uppercase tracking-widest text-brand-accent`}
+                  >
                     {card.eyebrow}
                   </span>
                   <h3 className="mt-1 text-xl font-bold text-white">
@@ -550,10 +666,10 @@ function UseCasesSection() {
                     {card.body}
                   </p>
                 </div>
-              </article>
-            </StaggerItem>
-          ))}
-        </Stagger>
+              </motion.article>
+            ))}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </section>
   );
@@ -576,8 +692,8 @@ function QuoteSection() {
             <div className="text-xs font-bold text-neutral-900">
               UploadRelay Studio
             </div>
-            <div className="text-[11px] text-neutral-500">
-              Cloud handoff system
+            <div className={`${ds.mono} text-neutral-500`}>
+              Relay manual · Handoffs
             </div>
           </div>
         </div>
@@ -634,25 +750,42 @@ function UpdatesSection() {
 
 function CtaSection() {
   return (
-    <section className="bg-[#fafafa] px-4 py-24 text-center">
-      <FadeUp className="mx-auto max-w-3xl space-y-6" y={24}>
-        <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-xs text-neutral-600 shadow-sm">
-          <Sparkles className="size-4" aria-hidden="true" />
-        </div>
-        <h2 className="text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl md:text-6xl">
-          Experience the future of video publishing
-        </h2>
-        <p className="mx-auto max-w-md text-sm leading-6 text-neutral-500">
-          Start with the working upload backbone, then layer review, approval,
-          and YouTube publishing on top.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-          <Link href="/auth?mode=signup" className={ds.primaryButton}>
-            Experience Relay
-          </Link>
-          <Link href="/upload" className={ds.secondaryButton}>
-            Open upload
-          </Link>
+    <section className="px-4 py-24 text-center">
+      <FadeUp className="mx-auto max-w-6xl" y={24}>
+        <div className="relative overflow-hidden rounded-3xl bg-brand-black px-6 py-16 text-white sm:px-12 md:py-20">
+          <div className="pointer-events-none absolute -top-32 left-1/2 h-64 w-[480px] -translate-x-1/2 rounded-full bg-brand-accent/20 blur-3xl" />
+          <div className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(circle_at_85%_10%,rgba(255,140,60,0.18),transparent_50%)]" />
+          <div className="relative space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-neutral-300">
+              <Sparkles className="size-3.5 text-brand-accent" aria-hidden="true" />
+              Relay is in open pilot
+            </div>
+            <h2 className="mx-auto max-w-2xl text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
+              Experience the future of{" "}
+              <span className="text-brand-accent">video publishing</span>
+            </h2>
+            <p className="mx-auto max-w-md text-sm leading-6 text-neutral-400">
+              Start with the working upload backbone, then layer review, approval,
+              and YouTube publishing on top.
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+              <Link
+                href="/auth?mode=signup"
+                className="inline-flex items-center justify-center rounded-full bg-white px-7 py-3 text-xs font-semibold text-black shadow-xl transition-colors hover:bg-neutral-200"
+              >
+                Experience Relay
+              </Link>
+              <Link
+                href="/upload"
+                className="inline-flex items-center justify-center rounded-full border border-white/15 px-7 py-3 text-xs font-semibold text-white transition-colors hover:border-white/40"
+              >
+                Open upload
+              </Link>
+            </div>
+            <div className="flex items-center justify-center pt-6">
+              <RelaySignal variant="dark" className="mx-auto w-48" />
+            </div>
+          </div>
         </div>
       </FadeUp>
     </section>
