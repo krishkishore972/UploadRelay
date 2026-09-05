@@ -42,18 +42,24 @@ export function Stagger({
   className,
   stagger = 0.08,
   delay = 0,
+  mount = false,
 }: {
   children: ReactNode;
   className?: string;
   stagger?: number;
   delay?: number;
+  mount?: boolean;
 }) {
   return (
     <motion.div
       className={className}
       initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "-80px" }}
+      {...(mount
+        ? { animate: "show" }
+        : {
+            whileInView: "show",
+            viewport: { once: true, margin: "-80px" },
+          })}
       variants={{
         hidden: {},
         show: {

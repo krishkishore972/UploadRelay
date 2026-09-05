@@ -142,7 +142,7 @@ function FloatingNav() {
         </div>
 
         <Link
-          href="/signup"
+href="/auth?mode=signup"
           className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-neutral-200"
         >
           Get started
@@ -174,7 +174,7 @@ function HeroSection() {
             <Link href="/upload" className={ds.primaryButton}>
               Test multipart upload
             </Link>
-            <Link href="/login" className={ds.secondaryButton}>
+            <Link href="/auth" className={ds.secondaryButton}>
               Sign in
             </Link>
           </div>
@@ -647,7 +647,7 @@ function CtaSection() {
           and YouTube publishing on top.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
-          <Link href="/signup" className={ds.primaryButton}>
+          <Link href="/auth?mode=signup" className={ds.primaryButton}>
             Experience Relay
           </Link>
           <Link href="/upload" className={ds.secondaryButton}>
