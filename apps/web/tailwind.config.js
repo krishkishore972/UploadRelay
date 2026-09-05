@@ -4,6 +4,7 @@ export default {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
 
     // Or if using `src` directory:
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
@@ -15,7 +16,19 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      letterSpacing: {
+        widestPlus: "0.22em",
+      },
       colors: {
+        brand: {
+          black: "#0a0a0c",
+          dark: "#111215",
+          gray: "#64676f",
+          light: "#f8f9fa",
+          accent: "#ff334b",
+          accentHover: "#e6243b",
+          border: "#e4e6ea",
+        },
         text: {
           50: "var(--text-50)",
           100: "var(--text-100)",

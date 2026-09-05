@@ -1,530 +1,729 @@
+"use client";
+
+import Link from "next/link";
+import { motion } from "framer-motion";
 import {
-  ArrowRight,
-  CheckCircle2,
-  CloudUpload,
-  FileVideo,
-  LockKeyhole,
-  MessageSquareText,
-  PlayCircle,
-  Send,
-  UserCheck,
+  Clock3,
+  Globe2,
+  Play,
+  Share2,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
-const platformCards = [
+import { ds } from "@/lib/design-system";
+import { FadeUp, Stagger, StaggerItem } from "@/components/motion/primitives";
+
+const partners = [
+  "MERIDIAN",
+  "NORTHLINE",
+  "ARCFORM",
+  "NELO GROUP",
+  "JUNIPER",
+  "APEXCUTS",
+  "PIXELPOST",
+];
+
+const fileRows = [
+  ["MOV", "Episode_04_ProRes_Master.mov", "34.2 GB", "neutral"],
+  ["MOV", "RoughRoute_v2_Rec709.mov", "18.4 GB", "neutral"],
+  ["SRT", "Campaign_Subtitles_EN.srt", "84 KB", "red"],
+  ["PNG", "Master_Thumbnail_A_B_Test.png", "4.1 MB", "green"],
+];
+
+const featureCards = [
   {
-    title: "File delivery",
-    description:
-      "Editors upload final exports directly to cloud storage with multipart upload.",
-    icon: CloudUpload,
+    eyebrow: "Vault",
+    title: "Campaign Master Cuts",
+    body: "ProRes 422 and DNxHR cloud staging without creator-side bandwidth pain.",
+    tone: "from-black via-neutral-900/90 to-neutral-800",
+    accent: "text-amber-400",
   },
   {
-    title: "Review and approval",
-    description:
-      "Creators review a lightweight preview, check metadata, and approve the final version.",
-    icon: MessageSquareText,
+    eyebrow: "Review",
+    title: "Frame Review",
+    body: "Preview-first approval keeps the original in S3 while creators review a lighter stream.",
+    tone: "from-[#282115] via-neutral-900 to-black",
+    accent: "text-orange-400",
   },
   {
-    title: "Publishing handoff",
-    description:
-      "Approved originals are queued for YouTube publishing without a creator-side reupload.",
-    icon: Send,
+    eyebrow: "Security",
+    title: "Creator Control",
+    body: "Editors never need channel credentials. Publishing waits for creator approval.",
+    tone: "from-[#17222a] via-neutral-950 to-black",
+    accent: "text-sky-400",
+  },
+  {
+    eyebrow: "Dispatch",
+    title: "Direct YouTube Pipeline",
+    body: "Approved originals move from cloud storage to YouTube ingestion servers.",
+    tone: "from-[#221c27] via-neutral-900 to-black",
+    accent: "text-emerald-400",
   },
 ];
 
-const workflowRows = [
-  ["Upload", "Editor sends the original video to S3", "Complete"],
-  ["Preview", "Worker prepares a review-friendly version", "Planned"],
-  ["Approval", "Creator signs off on video and metadata", "Planned"],
-  ["Publish", "Cloud sends original to YouTube private draft", "Planned"],
-];
-
-const reviewComments = [
-  ["00:34", "Trim the pause before the hook."],
-  ["03:12", "Thumbnail frame works. Use this version."],
-  ["08:47", "Approved for private draft upload."],
-];
-
-const sections = [
+const updates = [
   {
-    eyebrow: "Workflow management",
-    title: "Keep the handoff moving after the edit is done.",
-    description:
-      "UploadRelay gives creator teams one place to see what is uploaded, what needs review, what changed, and what is ready to publish.",
-    bullets: [
-      "Version status for every delivery",
-      "Creator approval before publishing",
-      "Clear next step for editor and creator",
-    ],
-    visual: "workspace",
+    type: "Product",
+    date: "Now",
+    title: "Multipart upload and S3 ingest pipeline are live in the MVP.",
+    visual: "Relay",
+    tone: "from-amber-400 via-brand-accent to-neutral-900",
   },
   {
-    eyebrow: "Review and approval",
-    title: "Review the preview without moving the original file.",
-    description:
-      "The creator does not need a fast connection to make a publishing decision. They review an optimized version while the source file stays ready in cloud storage.",
-    bullets: [
-      "Preview-first creator review",
-      "Timestamped feedback model",
-      "Approval trail for every version",
-    ],
-    visual: "review",
+    type: "Worker",
+    date: "Next",
+    title: "FFmpeg preview jobs generate HLS renditions for browser review.",
+    visual: "HLS",
+    tone: "from-teal-900 via-neutral-900 to-black",
   },
   {
-    eyebrow: "Cloud publishing",
-    title: "Publish from infrastructure, not from a laptop.",
-    description:
-      "After approval, a background worker can use the creator's connected account to upload the original file to YouTube as a private draft.",
-    bullets: [
-      "Creator-controlled OAuth connection",
-      "Original quality file preserved",
-      "Worker-ready publishing pipeline",
-    ],
-    visual: "publish",
+    type: "Review",
+    date: "Planned",
+    title: "Creator approval and publishing controls complete the next vertical slice.",
+    visual: "OK",
+    tone: "from-neutral-800 via-neutral-900 to-neutral-700",
   },
 ];
 
 export function LandingPage() {
   return (
-    <main className="bg-background-50 text-text-950">
-      <Header />
-      <Hero />
-      <PlatformIntro />
-      <FeatureSections />
-      <Metrics />
-      <Roadmap />
-      <FooterCta />
+    <main className={ds.page}>
+      <FloatingNav />
+      <HeroSection />
+      <PipelineSection />
+      <FoundationSection />
+      <PreviewSection />
+      <UseCasesSection />
+      <QuoteSection />
+      <UpdatesSection />
+      <CtaSection />
+      <Footer />
     </main>
   );
 }
 
-function Header() {
+function FloatingNav() {
   return (
-    <header className="sticky top-0 z-40 border-b border-background-200 bg-background-50/90 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 sm:px-8">
-        <a href="#top" className="text-base font-semibold tracking-tight">
-          UploadRelay
-        </a>
-        <nav className="hidden items-center gap-7 text-sm font-medium text-text-800 md:flex">
-          <a href="#platform" className="transition hover:text-text-950">
-            Platform
+    <motion.header
+      initial={{ opacity: 0, y: -16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+      className="sticky top-5 z-50 flex w-full justify-center px-4"
+    >
+      <nav className={`${ds.nav} flex w-full max-w-4xl items-center justify-between px-4 py-2`}>
+        <Link
+          href="/"
+          aria-label="UploadRelay Home"
+          className="group flex items-center gap-2.5 pl-1"
+        >
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-extrabold text-black shadow-sm transition-transform group-hover:scale-105">
+            <Play className="size-4 fill-current" aria-hidden="true" />
+          </span>
+          <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-white">
+            UploadRelay
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-accent" />
+          </span>
+        </Link>
+
+        <div className="hidden items-center gap-7 text-xs font-medium text-neutral-300 md:flex">
+          <a className="transition-colors hover:text-white" href="#pipeline">
+            Pipeline
           </a>
-          <a href="#workflow" className="transition hover:text-text-950">
+          <a className="transition-colors hover:text-white" href="#features">
+            Features
+          </a>
+          <a className="transition-colors hover:text-white" href="#workflow">
             Workflow
           </a>
-          <a href="#roadmap" className="transition hover:text-text-950">
-            Roadmap
-          </a>
-        </nav>
-        <div className="flex items-center gap-2">
-          <a
-            href="/login"
-            className="inline-flex h-9 items-center rounded-md border border-background-300 bg-background-50 px-3 text-sm font-semibold text-text-950 transition hover:bg-background-100"
-          >
-            Sign in
-          </a>
-          <a
-            href="/signup"
-            className="inline-flex h-9 items-center rounded-md bg-primary-700 px-3 text-sm font-semibold text-text-50 transition hover:bg-primary-800"
-          >
-            Sign up
+          <a className="transition-colors hover:text-white" href="#updates">
+            Updates
           </a>
         </div>
-      </div>
-    </header>
+
+        <Link
+          href="/signup"
+          className="rounded-full bg-white px-4 py-1.5 text-xs font-semibold text-black shadow-sm transition-colors hover:bg-neutral-200"
+        >
+          Get started
+        </Link>
+      </nav>
+    </motion.header>
   );
 }
 
-function Hero() {
+function HeroSection() {
   return (
-    <section id="top" className="border-b border-background-200">
-      <div className="mx-auto max-w-7xl px-5 pb-16 pt-20 sm:px-8 lg:pb-24 lg:pt-28">
-        <div className="mx-auto max-w-5xl text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-800">
-            Cloud review and publishing for creator teams
-          </p>
-          <h1 className="mt-6 text-5xl font-semibold leading-[0.98] tracking-tight sm:text-7xl lg:text-8xl">
-            One platform for the final video handoff.
+    <section className={`${ds.container} pb-16 pt-20 text-center md:pb-20 md:pt-28`}>
+      <Stagger className="mx-auto max-w-4xl">
+        <StaggerItem>
+          <h1 className="headline-display mx-auto max-w-4xl text-5xl font-bold text-neutral-900 sm:text-6xl md:text-7xl lg:text-[84px]">
+            Bring every cut
+            <br />
+            into focus
           </h1>
-          <p className="mx-auto mt-7 max-w-3xl text-lg leading-8 text-text-800 sm:text-xl">
-            Editors upload the original once. Creators review a lightweight
-            preview. Approved videos move from cloud storage to YouTube without
-            the creator downloading or reuploading the file.
+        </StaggerItem>
+        <StaggerItem y={18}>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-neutral-600 sm:text-xl">
+            Upload once. Review anywhere. Publish directly to YouTube. Streamline
+            master video handoffs without downloading a single gigabyte.
           </p>
-          <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
-            <a
-              href="/signup"
-              className="inline-flex h-12 items-center justify-center rounded-md bg-primary-700 px-5 text-sm font-semibold text-text-50 transition hover:bg-primary-800"
-            >
-              Create account
-            </a>
-            <a
-              href="/upload"
-              className="inline-flex h-12 items-center justify-center rounded-md border border-background-300 bg-background-50 px-5 text-sm font-semibold text-text-950 transition hover:bg-background-100"
-            >
+        </StaggerItem>
+        <StaggerItem y={18}>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/upload" className={ds.primaryButton}>
               Test multipart upload
-            </a>
-            <a
-              href="#platform"
-              className="inline-flex h-12 items-center justify-center rounded-md border border-background-300 bg-background-50 px-5 text-sm font-semibold text-text-950 transition hover:bg-background-100"
-            >
-              Explore platform
-            </a>
+            </Link>
+            <Link href="/login" className={ds.secondaryButton}>
+              Sign in
+            </Link>
           </div>
-        </div>
+        </StaggerItem>
+      </Stagger>
 
-        <div className="mt-16">
-          <ProductShell />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProductShell() {
-  return (
-    <div className="mx-auto max-w-6xl rounded-lg border border-background-200 bg-background-100 p-3 shadow-2xl shadow-primary-50/20">
-      <div className="overflow-hidden rounded-md border border-background-200 bg-background-50">
-        <div className="grid border-b border-background-200 lg:grid-cols-[220px_1fr_300px]">
-          <aside className="hidden border-r border-background-200 bg-background-100 p-4 lg:block">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-text-700">
-              Workspace
-            </p>
-            <div className="mt-5 space-y-2">
-              {["Inbox", "Ready for review", "Approved", "Publishing"].map(
-                (item, index) => (
-                  <div
-                    key={item}
-                    className={`rounded-md px-3 py-2 text-sm ${
-                      index === 1
-                        ? "bg-primary-700 text-text-50"
-                        : "text-text-800"
-                    }`}
-                  >
-                    {item}
-                  </div>
-                ),
-              )}
-            </div>
-          </aside>
-
-          <div className="p-4">
-            <div className="flex flex-col justify-between gap-4 border-b border-background-200 pb-4 sm:flex-row sm:items-center">
-              <div>
-                <p className="text-sm font-semibold">Launch video final</p>
-                <p className="mt-1 text-xs text-text-700">
-                  Original: 8.4 GB · Preview: 720p
-                </p>
+      <FadeUp mount y={32} delay={0.25} className="mx-auto mt-12 w-full max-w-5xl rounded-3xl bg-gradient-to-b from-neutral-300 via-neutral-200 to-transparent p-1.5 shadow-2xl sm:p-2 md:mt-16">
+        <div className="hero-glow-container flex h-72 w-full items-center justify-center rounded-[22px] p-6 text-white shadow-inner sm:h-96 md:h-[480px]">
+          <div className="relative z-10 w-full max-w-xl rounded-2xl border border-white/20 bg-black/40 p-6 text-left shadow-2xl backdrop-blur-xl">
+            <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-red-500" />
+                <span className="h-3 w-3 rounded-full bg-yellow-500" />
+                <span className="h-3 w-3 rounded-full bg-green-500" />
+                <span className={`${ds.mono} ml-2 hidden text-neutral-300 sm:inline`}>
+                  RELAY_PIPELINE // 04K_MASTER.mov
+                </span>
               </div>
-              <span className="w-fit rounded-md bg-accent-700/10 px-2.5 py-1 text-xs font-semibold text-accent-900">
-                Waiting for approval
+              <span className="rounded-full border border-brand-accent/40 bg-brand-accent/30 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-white">
+                Direct API
               </span>
             </div>
-
-            <div className="mt-4 aspect-video rounded-md border border-background-200 bg-background-100 p-3">
-              <div className="flex h-full items-center justify-center rounded border border-background-200 bg-background-50">
-                <div className="flex size-16 items-center justify-center rounded-full bg-primary-700 text-text-50">
-                  <PlayCircle className="size-8" aria-hidden="true" />
-                </div>
+            <div className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <span className="text-sm font-medium text-neutral-200">
+                  Render and ingest stream
+                </span>
+                <span className="font-mono text-xs text-emerald-400">
+                  100% lossless
+                </span>
+              </div>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/20">
+                <div className="h-full w-[84%] rounded-full bg-gradient-to-r from-yellow-400 via-brand-accent to-pink-500" />
+              </div>
+              <div className="flex items-center justify-between pt-1 text-xs text-neutral-300">
+                <span className="flex items-center gap-1.5">
+                  <Clock3 className="size-3.5 text-white/80" aria-hidden="true" />
+                  Rendered in 22s
+                </span>
+                <span className="font-mono text-neutral-200">
+                  YouTube 4K60 ready
+                </span>
               </div>
             </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
-              {[
-                ["Title", "Summer launch story"],
-                ["Visibility", "Private draft"],
-                ["Thumbnail", "Selected"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-md border border-background-200 bg-background-100 p-3"
-                >
-                  <p className="text-xs font-medium text-text-700">{label}</p>
-                  <p className="mt-2 text-sm font-semibold">{value}</p>
-                </div>
-              ))}
-            </div>
           </div>
-
-          <aside className="border-t border-background-200 bg-background-100 p-4 lg:border-l lg:border-t-0">
-            <p className="text-sm font-semibold">Review notes</p>
-            <div className="mt-4 space-y-3">
-              {reviewComments.map(([time, comment]) => (
-                <div
-                  key={time}
-                  className="rounded-md border border-background-200 bg-background-50 p-3"
-                >
-                  <p className="text-xs font-semibold text-accent-900">
-                    {time}
-                  </p>
-                  <p className="mt-1 text-sm leading-5 text-text-800">
-                    {comment}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </aside>
         </div>
-      </div>
-    </div>
+      </FadeUp>
+
+      <FadeUp mount y={18} delay={0.35}>
+        <div className="mt-20 border-t border-neutral-200/80 pt-8">
+          <p className={`${ds.label} mb-8 text-neutral-600`}>
+            Trusted by high-throughput creator networks and post-production studios
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm font-semibold tracking-wider text-neutral-600 sm:gap-14">
+            {partners.map((partner) => (
+              <span key={partner} className="transition-colors hover:text-neutral-900">
+                {partner}
+              </span>
+            ))}
+          </div>
+        </div>
+      </FadeUp>
+    </section>
   );
 }
 
-function PlatformIntro() {
+function PipelineSection() {
   return (
-    <section id="platform" className="border-b border-background-200 bg-background-100 py-20">
-      <div className="mx-auto max-w-7xl px-5 sm:px-8">
-        <div className="grid gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-end">
-          <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent-800">
-              The UploadRelay platform
-            </p>
-            <h2 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-              Everything after export, before publish.
+    <section id="pipeline" className="overflow-hidden px-4 py-24">
+      <div className="relative mx-auto max-w-5xl">
+        <FadeUp>
+          <div className="mb-16 text-center">
+            <h2 className="text-4xl font-bold tracking-tight text-neutral-900 md:text-5xl">
+              Creative intelligence and dispatch
             </h2>
+            <p className="mx-auto mt-3 max-w-xl text-base text-neutral-600">
+              Decouple high-resolution master storage from creator approvals.
+              Every edit stays pristine.
+            </p>
           </div>
-          <p className="max-w-2xl text-lg leading-8 text-text-800">
-            The product is deliberately focused: move the final file, collect
-            approval, and publish only when the creator decides. No editor needs
-            channel access. No creator needs to reupload a giant video.
-          </p>
-        </div>
+        </FadeUp>
 
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {platformCards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <article
-                key={card.title}
-                className="rounded-lg border border-background-200 bg-background-50 p-5"
-              >
-                <div className="flex size-11 items-center justify-center rounded-md bg-primary-700 text-text-50">
-                  <Icon className="size-5" aria-hidden="true" />
+        <Stagger className="relative grid grid-cols-1 items-center gap-6 md:grid-cols-3">
+          <StaggerItem>
+            <div className="glass-card-warm flex h-48 -rotate-1 flex-col justify-between rounded-2xl p-5 text-white shadow-xl transition-transform hover:rotate-0">
+              <div className="flex items-center justify-between text-xs text-white/80">
+                <span className="font-mono">ProRes 422 HQ</span>
+                <span className="rounded-full bg-black/20 px-2 py-0.5 text-[10px]">
+                  Lossless
+                </span>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-white/70">
+                  Master volume
                 </div>
-                <h3 className="mt-8 text-xl font-semibold">{card.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-text-800">
-                  {card.description}
+                <div className="text-sm font-semibold">
+                  10-bit color depth verified
+                </div>
+              </div>
+              <div className="h-1 w-full overflow-hidden rounded-full bg-black/20">
+                <div className="h-full w-3/4 bg-white/80" />
+              </div>
+            </div>
+          </StaggerItem>
+
+          <StaggerItem>
+            <div className="space-y-4 md:-mt-8">
+              <div className={`${ds.card} p-6 shadow-xl`}>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className={`${ds.label} text-neutral-500`}>
+                    Fast-track node
+                  </span>
+                  <div className="flex h-5 w-9 items-center justify-end rounded-full bg-neutral-900 p-0.5">
+                    <div className="h-4 w-4 rounded-full bg-white" />
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-xs font-bold text-brand-accent">
+                    4K
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-neutral-900">
+                      Auto proxy generator
+                    </h3>
+                    <p className="text-[11px] text-neutral-500">
+                      Stream ready in under 90 seconds
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass-card-teal flex h-40 flex-col justify-between rounded-2xl p-5 text-white shadow-xl">
+                <div className="flex items-center justify-between text-xs">
+                  <span>Direct OAuth 2.0</span>
+                  <span className="h-2 w-2 rounded-full bg-emerald-300" />
+                </div>
+                <p className="text-xs leading-5 text-white/90">
+                  Channel credentials stay protected while editors manage delivery.
                 </p>
-              </article>
-            );
-          })}
-        </div>
+              </div>
+            </div>
+          </StaggerItem>
+
+          <StaggerItem>
+            <div className="glass-card-teal flex h-52 rotate-1 flex-col justify-between rounded-2xl p-5 text-white shadow-xl transition-transform hover:rotate-0">
+              <div className="flex items-center justify-between text-xs text-white/70">
+                <span className="font-mono">YouTube Direct API</span>
+                <span>v3 dispatch</span>
+              </div>
+              <div className="my-auto space-y-2">
+                <div className="text-sm font-semibold">
+                  Metadata and thumbnail sync
+                </div>
+                <p className="text-xs leading-5 text-white/80">
+                  Titles, tags, chapters, and thumbnails travel with the final
+                  approval state.
+                </p>
+              </div>
+              <div className="font-mono text-[11px] text-white/60">
+                Status: Connected, 24ms latency
+              </div>
+            </div>
+          </StaggerItem>
+        </Stagger>
+
+        <FadeUp>
+          <div className="mx-auto mt-24 max-w-3xl px-4 text-center">
+            <p className="text-2xl font-normal leading-snug tracking-tight text-neutral-800 sm:text-3xl md:text-[34px]">
+              As video pipelines expand across remote editors and distributed
+              creators, the need for a singular source of truth has never been
+              more critical.{" "}
+              <span className="font-semibold text-black">
+                UploadRelay unifies your workflow.
+              </span>
+            </p>
+          </div>
+        </FadeUp>
       </div>
     </section>
   );
 }
 
-function FeatureSections() {
+function FoundationSection() {
   return (
-    <div id="workflow">
-      {sections.map((section, index) => (
-        <section
-          key={section.title}
-          className={`border-b border-background-200 py-24 ${
-            index % 2 === 0 ? "bg-background-50" : "bg-background-100"
-          }`}
-        >
-          <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-2 lg:items-center">
-            <div className={index % 2 === 1 ? "lg:order-2" : ""}>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent-800">
-                {section.eyebrow}
-              </p>
-              <h2 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-                {section.title}
-              </h2>
-              <p className="mt-5 text-lg leading-8 text-text-800">
-                {section.description}
-              </p>
-              <div className="mt-8 space-y-3">
-                {section.bullets.map((bullet) => (
-                  <div key={bullet} className="flex items-center gap-3">
-                    <CheckCircle2
-                      className="size-5 text-accent-800"
-                      aria-hidden="true"
-                    />
-                    <p className="text-sm font-medium text-text-900">
-                      {bullet}
-                    </p>
-                  </div>
+    <section id="features" className="border-y border-neutral-200/70 bg-white px-4 py-16 md:py-24">
+      <Stagger className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <StaggerItem>
+          <div className={`${ds.softPanel} p-6 sm:p-8`}>
+            <div className={`${ds.card} p-5`}>
+              <div className="flex items-center justify-between border-b border-neutral-100 pb-3 text-xs text-neutral-400">
+                <span className="font-medium text-neutral-700">
+                  Project master cuts
+                </span>
+                <span>...</span>
+              </div>
+              <ul className="divide-y divide-neutral-100 text-xs">
+                {fileRows.map(([ext, name, size, tone]) => (
+                  <li key={name} className="flex items-center justify-between gap-4 py-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-[10px] ${
+                          tone === "red"
+                            ? "bg-red-50 text-brand-accent"
+                            : tone === "green"
+                              ? "bg-emerald-50 text-emerald-600"
+                              : "bg-neutral-100 text-neutral-700"
+                        }`}
+                      >
+                        {ext}
+                      </div>
+                      <span className="truncate font-medium text-neutral-800">
+                        {name}
+                      </span>
+                    </div>
+                    <span className={`${ds.mono} shrink-0 text-neutral-400`}>
+                      {size}
+                    </span>
+                  </li>
                 ))}
+              </ul>
+            </div>
+          </div>
+        </StaggerItem>
+
+        <StaggerItem y={20}>
+          <div className="space-y-8">
+            <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+              The intelligent foundation for your channel.
+            </h2>
+            <FeatureList
+              items={[
+                [
+                  "Centralized asset knowledge",
+                  "Hold uncompressed master files, raw stems, captions, and thumbnail variants in one structured handoff.",
+                ],
+                [
+                  "Contextual previews",
+                  "Generate streamable previews for managers and talent without moving the source file.",
+                ],
+                [
+                  "Seamless distribution",
+                  "Remove the repeated download and upload loop from every approved final cut.",
+                ],
+              ]}
+            />
+          </div>
+        </StaggerItem>
+      </Stagger>
+    </section>
+  );
+}
+
+function PreviewSection() {
+  return (
+    <section className="px-4 py-16 md:py-24">
+      <Stagger className="mx-auto grid max-w-5xl grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <StaggerItem y={20}>
+          <div className="order-2 space-y-8 lg:order-1">
+            <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+              Generate review-ready previews in seconds.
+            </h2>
+            <FeatureList
+              items={[
+                [
+                  "Automated HLS previews",
+                  "Workers generate adaptive streams so reviewers can watch from ordinary browsers and networks.",
+                ],
+                [
+                  "Timecoded decisions",
+                  "The next layer is review comments, approvals, and change requests tied to the preview.",
+                ],
+                [
+                  "Publish-ready originals",
+                  "The high-quality source remains available for a direct YouTube upload after approval.",
+                ],
+              ]}
+            />
+          </div>
+        </StaggerItem>
+
+        <StaggerItem>
+          <div className="order-1 flex min-h-[340px] items-center justify-center rounded-3xl bg-[#dce8f8] p-8 sm:p-12 lg:order-2">
+            <div className={`${ds.card} relative w-full max-w-sm p-5 shadow-lg`}>
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-neutral-500">
+                <span className="h-2 w-2 rounded-full bg-brand-accent animate-pulse" />
+                Live sign-off event
+              </div>
+              <p className="text-sm font-medium leading-relaxed text-neutral-800">
+                Creator approved Cut v4 at 04:18. Scheduling the 24.6 GB 4K
+                master for YouTube publication.
+              </p>
+              <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3 text-xs text-neutral-400">
+                <span>Token: Auth_Relay_yt_98</span>
+                <span className="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[10px] text-emerald-600">
+                  Verified
+                </span>
               </div>
             </div>
-            <FeatureVisual kind={section.visual} />
           </div>
-        </section>
+        </StaggerItem>
+      </Stagger>
+    </section>
+  );
+}
+
+function FeatureList({ items }: { items: string[][] }) {
+  return (
+    <div className="space-y-6">
+      {items.map(([title, body], index) => (
+        <div
+          key={title}
+          className={`border-l-2 pl-4 ${
+            index === 0 ? "border-brand-accent" : "border-neutral-300"
+          }`}
+        >
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-neutral-900">
+            {title}
+          </h3>
+          <p className="mt-1 text-sm leading-relaxed text-neutral-600">
+            {body}
+          </p>
+        </div>
       ))}
     </div>
   );
 }
 
-function FeatureVisual({ kind }: { kind: string }) {
-  if (kind === "review") {
-    return (
-      <div className="rounded-lg border border-background-200 bg-background-50 p-4 shadow-xl shadow-primary-50/10">
-        <div className="rounded-md border border-background-200 bg-background-100 p-4">
-          <div className="aspect-video rounded border border-background-200 bg-background-50" />
-          <div className="mt-4 space-y-3">
-            {reviewComments.map(([time, comment]) => (
-              <div key={time} className="flex gap-3 rounded-md bg-background-50 p-3">
-                <span className="text-xs font-semibold text-accent-900">
-                  {time}
-                </span>
-                <p className="text-sm text-text-800">{comment}</p>
-              </div>
-            ))}
+function UseCasesSection() {
+  return (
+    <section id="workflow" className="bg-white px-4 py-20 md:py-28">
+      <div className="mx-auto max-w-5xl">
+        <FadeUp>
+          <div className="space-y-4 text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-neutral-900 md:text-4xl">
+              Built for every team.
+            </h2>
+            <div className="inline-flex items-center rounded-full border border-neutral-200/80 bg-neutral-100 p-1 text-xs">
+              {["Strategy", "Creators", "Post Houses", "Media"].map((item, index) => (
+                <button
+                  key={item}
+                  className={`rounded-full px-4 py-1.5 font-medium transition-colors ${
+                    index === 0
+                      ? "bg-black text-white shadow-sm"
+                      : "text-neutral-600 hover:text-neutral-900"
+                  }`}
+                  type="button"
+                >
+                  {item}
+                </button>
+              ))}
+            </div>
+          </div>
+        </FadeUp>
+
+        <Stagger className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-2">
+          {featureCards.map((card) => (
+            <StaggerItem key={card.title}>
+              <article
+                className={`${ds.darkCard} group relative flex h-64 flex-col justify-end overflow-hidden p-6 sm:h-72`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-tr ${card.tone} opacity-95 transition-transform duration-500 group-hover:scale-105`}
+                />
+                <div className="absolute right-6 top-6 h-20 w-20 rounded-full bg-gradient-to-br from-amber-400 to-brand-accent opacity-30 blur-lg" />
+                <div className="relative z-10">
+                  <span className={`${ds.mono} uppercase tracking-widest ${card.accent}`}>
+                    {card.eyebrow}
+                  </span>
+                  <h3 className="mt-1 text-xl font-bold text-white">
+                    {card.title}
+                  </h3>
+                  <p className="mt-1 max-w-xs text-xs leading-5 text-neutral-300">
+                    {card.body}
+                  </p>
+                </div>
+              </article>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
+function QuoteSection() {
+  return (
+    <section className="border-t border-neutral-200/60 bg-[#fafafa] px-4 py-24">
+      <FadeUp className="mx-auto max-w-3xl text-center" y={24}>
+        <blockquote className="text-2xl font-medium leading-snug tracking-tight text-neutral-900 sm:text-3xl md:text-4xl">
+          &ldquo;UploadRelay was built to remove the repeated file transfer work from
+          creative teams, so they can focus on sharper stories and cleaner
+          launches.&rdquo;
+        </blockquote>
+        <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-neutral-200 bg-white px-4 py-2 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-brand-accent to-amber-500 text-xs font-bold text-white">
+            UR
+          </div>
+          <div className="text-left">
+            <div className="text-xs font-bold text-neutral-900">
+              UploadRelay Studio
+            </div>
+            <div className="text-[11px] text-neutral-500">
+              Cloud handoff system
+            </div>
+          </div>
+        </div>
+      </FadeUp>
+    </section>
+  );
+}
+
+function UpdatesSection() {
+  return (
+    <section id="updates" className="border-t border-neutral-200/80 bg-white px-4 py-20 md:py-24">
+      <div className="mx-auto max-w-5xl">
+        <FadeUp>
+          <div className="mb-10 flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight text-neutral-900 sm:text-3xl">
+              Latest updates
+            </h2>
+            <Link
+              href="/upload"
+              className="text-xs font-semibold text-neutral-500 transition-colors hover:text-black"
+            >
+              Open upload
+            </Link>
+          </div>
+        </FadeUp>
+
+        <Stagger className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {updates.map((update) => (
+            <StaggerItem key={update.title}>
+              <article
+                className="group rounded-2xl border border-neutral-200/80 bg-neutral-50 p-4 shadow-sm transition-all hover:border-neutral-300"
+              >
+                <div className={`flex h-44 items-center justify-center rounded-xl bg-gradient-to-br ${update.tone} p-4`}>
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 text-sm font-bold text-white backdrop-blur-md">
+                    {update.visual}
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <div className={`${ds.mono} text-neutral-400`}>
+                    {update.type} / {update.date}
+                  </div>
+                  <h3 className="mt-1 text-sm font-bold text-neutral-900 transition-colors group-hover:text-brand-accent">
+                    {update.title}
+                  </h3>
+                </div>
+              </article>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </div>
+    </section>
+  );
+}
+
+function CtaSection() {
+  return (
+    <section className="bg-[#fafafa] px-4 py-24 text-center">
+      <FadeUp className="mx-auto max-w-3xl space-y-6" y={24}>
+        <div className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-neutral-200 bg-neutral-100 text-xs text-neutral-600 shadow-sm">
+          <Sparkles className="size-4" aria-hidden="true" />
+        </div>
+        <h2 className="text-4xl font-bold tracking-tight text-neutral-900 sm:text-5xl md:text-6xl">
+          Experience the future of video publishing
+        </h2>
+        <p className="mx-auto max-w-md text-sm leading-6 text-neutral-500">
+          Start with the working upload backbone, then layer review, approval,
+          and YouTube publishing on top.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+          <Link href="/signup" className={ds.primaryButton}>
+            Experience Relay
+          </Link>
+          <Link href="/upload" className={ds.secondaryButton}>
+            Open upload
+          </Link>
+        </div>
+      </FadeUp>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <FadeUp className="px-4 pb-6 pt-2" y={16}>
+      <div className="mx-auto max-w-6xl rounded-3xl bg-brand-black px-8 py-14 text-neutral-400 md:py-16">
+        <div className="grid grid-cols-1 gap-10 border-b border-neutral-800 pb-12 text-xs md:grid-cols-5">
+          <div className="space-y-4 md:col-span-2">
+            <div className="flex items-center gap-2">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white text-xs font-bold text-black">
+                R
+              </span>
+              <span className="text-sm font-bold tracking-tight text-white">
+                UploadRelay
+              </span>
+            </div>
+            <p className="max-w-xs text-xs leading-relaxed text-neutral-400">
+              The operating system for modern creator handoffs. Upload once,
+              review lightly, and publish with control.
+            </p>
+            <div className="flex items-center gap-3 pt-2 text-neutral-500">
+              <Share2 className="size-4" aria-hidden="true" />
+              <Globe2 className="size-4" aria-hidden="true" />
+              <ShieldCheck className="size-4" aria-hidden="true" />
+            </div>
+          </div>
+
+          <FooterColumn title="Product" items={["Platform", "Preview", "Studio", "Integrations"]} />
+          <FooterColumn title="Company" items={["About", "Roadmap", "Newsroom", "Contact"]} />
+          <FooterColumn title="Resources" items={["Docs", "API", "Support", "Status"]} />
+        </div>
+
+        <div className="flex flex-col items-center justify-between gap-4 pt-8 text-[11px] text-neutral-500 sm:flex-row">
+          <div>Copyright 2026 UploadRelay. All rights reserved.</div>
+          <div className="flex flex-wrap items-center justify-center gap-6">
+            <a className="transition-colors hover:text-neutral-300" href="#">
+              Privacy
+            </a>
+            <a className="transition-colors hover:text-neutral-300" href="#">
+              Terms
+            </a>
+            <a className="transition-colors hover:text-neutral-300" href="#">
+              YouTube API Terms
+            </a>
           </div>
         </div>
       </div>
-    );
-  }
+    </FadeUp>
+  );
+}
 
-  if (kind === "publish") {
-    const publishItems = [
-      {
-        title: "Original file",
-        subtitle: "Stored in S3",
-        icon: FileVideo,
-      },
-      {
-        title: "Creator token",
-        subtitle: "OAuth connection",
-        icon: LockKeyhole,
-      },
-      {
-        title: "Publish job",
-        subtitle: "Private YouTube draft",
-        icon: Send,
-      },
-    ];
-
-    return (
-      <div className="rounded-lg border border-background-200 bg-background-50 p-5 shadow-xl shadow-primary-50/10">
-        <div className="grid gap-4">
-          {publishItems.map((item) => {
-            const Icon = item.icon;
-
-            return (
-            <div
-              key={item.title}
-              className="flex items-center gap-4 rounded-md border border-background-200 bg-background-100 p-4"
-            >
-              <div className="flex size-10 items-center justify-center rounded-md bg-primary-700 text-text-50">
-                <Icon className="size-5" aria-hidden="true" />
-              </div>
-              <div>
-                <p className="font-semibold">{item.title}</p>
-                <p className="mt-1 text-sm text-text-700">{item.subtitle}</p>
-              </div>
-            </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
+function FooterColumn({ title, items }: { title: string; items: string[] }) {
   return (
-    <div className="rounded-lg border border-background-200 bg-background-50 p-4 shadow-xl shadow-primary-50/10">
-      <div className="rounded-md border border-background-200 bg-background-100">
-        <div className="border-b border-background-200 p-4">
-          <p className="text-sm font-semibold">Project queue</p>
-        </div>
-        <div className="divide-y divide-background-200">
-          {workflowRows.map(([stage, detail, status]) => (
-            <div
-              key={stage}
-              className="grid grid-cols-[0.8fr_1.3fr_0.8fr] gap-4 p-4"
-            >
-              <span className="text-sm font-medium">{stage}</span>
-              <span className="text-sm text-text-800">{detail}</span>
-              <span className="text-sm text-accent-900">{status}</span>
-            </div>
-          ))}
-        </div>
+    <div className="space-y-3">
+      <div className="text-[11px] font-semibold uppercase tracking-wider text-white">
+        {title}
       </div>
+      <ul className="space-y-2 text-neutral-400">
+        {items.map((item) => (
+          <li key={item}>
+            <a className="transition-colors hover:text-white" href="#">
+              {item}
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-function Metrics() {
-  return (
-    <section className="border-b border-background-200 bg-background-100 py-20">
-      <div className="mx-auto grid max-w-7xl gap-4 px-5 sm:px-8 md:grid-cols-3">
-        {[
-          ["1 upload", "The editor sends the final file once."],
-          ["0 reuploads", "The creator never handles the original locally."],
-          ["Private draft", "YouTube upload works for an unverified project."],
-        ].map(([value, label]) => (
-          <div
-            key={value}
-            className="rounded-lg border border-background-200 bg-background-50 p-6"
-          >
-            <p className="text-4xl font-semibold tracking-tight">{value}</p>
-            <p className="mt-3 text-sm leading-6 text-text-800">{label}</p>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function Roadmap() {
-  return (
-    <section id="roadmap" className="border-b border-background-200 bg-background-50 py-24">
-      <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[0.8fr_1.2fr]">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent-800">
-            MVP roadmap
-          </p>
-          <h2 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl">
-            A focused build path for the complete relay.
-          </h2>
-        </div>
-        <div className="space-y-3">
-          {[
-            ["Now", "Multipart upload to S3"],
-            ["Next", "Preview generation with FFmpeg worker"],
-            ["Then", "Review page with comments and approval"],
-            ["Finally", "Publish original to YouTube private draft"],
-          ].map(([time, item]) => (
-            <div
-              key={item}
-              className="grid grid-cols-[80px_1fr] rounded-lg border border-background-200 bg-background-100 p-4"
-            >
-              <span className="text-sm font-semibold text-accent-900">
-                {time}
-              </span>
-              <span className="text-sm font-medium text-text-900">{item}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function FooterCta() {
-  return (
-    <section className="bg-background-100 px-5 py-16 sm:px-8">
-      <div className="mx-auto flex max-w-7xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-accent-800">
-            <UserCheck className="size-4" aria-hidden="true" />
-            <p className="text-sm font-semibold uppercase tracking-[0.18em]">
-              Creator-controlled delivery
-            </p>
-          </div>
-          <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-tight">
-            Let the cloud move the original. Let the creator make the call.
-          </h2>
-        </div>
-        <a
-          href="/upload"
-          className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-primary-700 px-5 text-sm font-semibold text-text-50 transition hover:bg-primary-800"
-        >
-          Open upload
-          <ArrowRight className="size-4" aria-hidden="true" />
-        </a>
-      </div>
-    </section>
-  );
-}
