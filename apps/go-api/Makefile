@@ -22,4 +22,4 @@ migrate-down:
 	@go run cmd/migrate/main.go down
 
 migrate-version:
-	@go run cmd/migrate/main.go version
+	@go run cmd/migrate/main.go version`

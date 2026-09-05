@@ -222,6 +222,12 @@ type SignPartResponse struct {
 	PartNumber int32  `json:"partNumber"`
 }
 
+/*
+Later improvement:
+Support batch presigning for multiple part numbers and generate signed URLs concurrently
+with a small errgroup limit. Current endpoint signs one part per request, so a goroutine
+would add complexity without benefit.
+*/
 func (h *MultipartHandler) SignPart(w http.ResponseWriter, r *http.Request) {
 
 	var req SignPartRequest

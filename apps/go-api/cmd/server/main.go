@@ -32,6 +32,12 @@ func main() {
 		log.Fatalf("failed to create multipart handler: %v", err)
 	}
 
+	videoHandler,err := handlers.NewVideHandler(db)
+	if err != nil {
+		log.Fatalf("failed to create video handler: %v", err)
+	}
+	
+	// multipart
 	mux.Handle(
 		"POST /uploads/create",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(multipartHandler.CreateMultipartUpload)),
@@ -47,6 +53,12 @@ func main() {
 	mux.Handle(
 		"POST /uploads/abort",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(multipartHandler.AbortMultipartUpload)),
+	)
+
+	// video
+	mux.Handle(
+		"GET /videos/editor",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetEditorVideos)),
 	)
 
 	server := &http.Server{

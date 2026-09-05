@@ -153,6 +153,15 @@ func createHLSPreview(ctx context.Context, inputPath, outputDir string) error {
 	return nil
 }
 
+/*
+These files are independent. Uploading segment_001.ts does not depend on uploading segment_000.ts. So you can upload several at the same time.
+But don’t start unlimited goroutines. Use a small concurrency limit, like 4.
+Conceptually:
+upload 4 files at once
+when one finishes, start another
+if any upload fails, return error
+*/
+
 func (p *Processor) uploadDirToS3(ctx context.Context, localDir, s3Prefix string) error {
 	return filepath.Walk(localDir, func(fp string, info os.FileInfo, err error) error {
 		if err != nil {
