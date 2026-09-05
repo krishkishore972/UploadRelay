@@ -85,31 +85,29 @@ The creator keeps control of their YouTube channel, while the editor does not ne
 
 ## MVP Scope
 
-The first version focuses on the complete editor-to-YouTube workflow:
+The first version is being built toward the complete editor-to-YouTube workflow:
 
 - User authentication
 - Creator and editor roles
-- Workspace creation
-- Team invitations
 - Large video uploads
 - Optimized preview generation
-- Thumbnail and metadata submission
 - Review, approval, and change requests
 - YouTube account connection
 - Direct YouTube publishing
-- Upload progress and retry handling
-- Basic audit logs and notifications
+- Upload progress and failure recovery
+
+Workspace creation, team invitations, metadata review, thumbnail upload, publishing, audit logs, and notifications are planned but not part of the currently working vertical slice yet.
 
 ## Monorepo Structure
 
 ```text
 UploadRelay/
 |-- apps/
-|   |-- web/       # Frontend application
-|   |-- api/       # Backend API
-|   `-- worker/    # Background processing and publishing worker
+|   |-- web/       # Next.js frontend and auth routes
+|   `-- go-api/    # Go API, SQL migrations, and Asynq worker
 |
 |-- packages/
+|   |-- db/                    # Prisma client used by the Next.js app for DB queries
 |   |-- ui/                    # Shared UI components
 |   |-- eslint-config/         # Shared ESLint configuration
 |   `-- typescript-config/     # Shared TypeScript configuration
@@ -119,14 +117,60 @@ UploadRelay/
 `-- README.md
 ```
 
-## Planned Architecture
+## Current Tech Stack
 
-- **Frontend:** Next.js, React, TypeScript
-- **API:** Node.js service for workspaces, uploads, review, approval, and YouTube integration
-- **Worker:** Background jobs for video processing, preview generation, and YouTube publishing
-- **Storage:** Object storage for original videos, thumbnails, and generated previews
-- **Queue:** Reliable background job processing for uploads and publishing
-- **Database:** Persistent records for users, workspaces, projects, versions, comments, approvals, and publications
+- **Monorepo:** Bun workspaces and Turborepo
+- **Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS
+- **Authentication:** NextAuth in the web app, with a Go JWT bridge for upload API calls
+- **Web database client:** Prisma Client from `packages/db`
+- **Backend API:** Go HTTP server in `apps/go-api`
+- **Database migrations:** Go-owned SQL migrations in `apps/go-api/migrations`
+- **Database driver:** `database/sql` with pgx
+- **Database:** PostgreSQL
+- **Object storage:** Amazon S3 for original uploads and generated previews
+- **Multipart upload:** Go API creates, signs, completes, and aborts S3 multipart uploads
+- **Queue:** Redis-backed Asynq
+- **Worker:** Go Asynq worker for FFmpeg preview generation
+- **Video processing:** FFmpeg HLS previews
+
+Prisma is used by the Next.js app as a typed query client. Database schema changes should be applied through the Go migration files to keep one migration source of truth, then Prisma Client should be regenerated from the synced Prisma schema.
+
+## MVP Progress
+
+Current state:
+
+- Implemented: landing page and upload page shell.
+- Implemented: email/password registration and login flow in the web app.
+- Implemented: Prisma client package for web-side auth/database queries.
+- Implemented: Go API service with authenticated S3 multipart upload endpoints.
+- Implemented: SQL migrations for users, videos, YouTube connections, publish jobs, and upload-aborted video status.
+- Implemented: browser-to-S3 multipart upload flow with progress tracking.
+- Implemented: upload abort fallback from the web app.
+- Implemented: Redis/Asynq queue wiring for background transcode jobs.
+- Implemented: Go worker that downloads the original from S3, generates HLS preview renditions with FFmpeg, uploads previews to S3, and updates video transcode status.
+- Partially implemented: creator/editor model. Current upload flow still sets both `editorId` and `creatorId` to the logged-in user for solo MVP testing.
+- Partially implemented: video status lifecycle. Upload and preview generation statuses exist, but review, approval, and publishing states are not wired to user-facing workflows yet.
+- Not implemented yet: workspace creation and invitations.
+- Not implemented yet: creator review page, comments, approvals, and change requests.
+- Not implemented yet: YouTube OAuth connection flow.
+- Not implemented yet: direct YouTube publishing worker.
+- Not implemented yet: metadata/thumbnail submission and review.
+- Not implemented yet: audit logs and notifications.
+
+Estimated MVP completion: about 40-45%.
+
+The upload and preview-generation backbone is now the strongest part of the product. The remaining MVP work is mostly product workflow: connecting creators and editors, letting a creator review a generated preview, approving/rejecting, then publishing to YouTube.
+
+## Recommended Next Target
+
+The next best target is the creator review flow:
+
+1. Add a video detail/review API or web route that loads a video by `videoId`, checks ownership, and returns title, status, original metadata, and preview keys.
+2. Build a review page that plays the generated HLS preview from S3.
+3. Add basic approve/reject actions that move `PREVIEW_READY` videos into `APPROVED` or `REJECTED`.
+4. After approval works, start YouTube OAuth and publishing.
+
+This keeps momentum on the vertical slice: upload original, generate preview, review preview, approve, publish.
 
 ## Main Workflow
 
@@ -147,6 +191,11 @@ This repository uses Bun workspaces and Turborepo.
 
 - Node.js 18 or newer
 - Bun 1.3.13 or newer
+- Go
+- PostgreSQL database
+- Redis
+- FFmpeg
+- AWS credentials with S3 access
 
 ### Install Dependencies
 
@@ -159,6 +208,61 @@ bun install
 ```sh
 bun run dev
 ```
+
+### Go API Local Development
+
+Run these commands from `apps/go-api`.
+
+Start the API server:
+
+```sh
+make run
+```
+
+Start the background worker:
+
+```sh
+make run-worker
+```
+
+Build the API server binary:
+
+```sh
+make build
+```
+
+Build the worker binary:
+
+```sh
+make build-worker
+```
+
+Apply database migrations:
+
+```sh
+make migrate-up
+```
+
+Roll back one migration:
+
+```sh
+make migrate-down
+```
+
+Check migration version:
+
+```sh
+make migrate-version
+```
+
+After changing Go-owned SQL migrations, keep `packages/db/prisma/schema.prisma` in sync and regenerate the Prisma client:
+
+```sh
+cd packages/db
+bun --bunx prisma generate
+```
+
+Do not run Prisma migrations unless migration ownership is intentionally moved from Go SQL migrations to Prisma.
 
 ### Build
 
@@ -208,4 +312,4 @@ UploadRelay is in early development.
 
 ## Author
 
-Built by **Sabavath Kishore**.
+Built by **Kishore**.
