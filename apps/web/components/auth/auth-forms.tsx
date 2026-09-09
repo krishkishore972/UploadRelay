@@ -34,7 +34,7 @@ function LoginFormInner({ onSwitch }: { onSwitch: () => void }) {
       return;
     }
 
-    router.push(searchParams.get("callbackUrl") ?? "/upload");
+    router.push(searchParams.get("callbackUrl") ?? "/dashboard");
     router.refresh();
   }
 
@@ -143,7 +143,7 @@ export function SignupForm({ onSwitch }: { onSwitch: () => void }) {
       return;
     }
 
-    router.push("/upload");
+    router.push("/dashboard");
     router.refresh();
   }
 

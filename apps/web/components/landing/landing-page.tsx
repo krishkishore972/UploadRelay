@@ -230,8 +230,8 @@ function HeroSection() {
         </StaggerItem>
         <StaggerItem y={18}>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/upload" className={ds.primaryButton}>
-              Test multipart upload
+            <Link href="/auth?mode=signup" className={ds.primaryButton}>
+              Get started
             </Link>
             <Link href="/auth" className={ds.secondaryButton}>
               Sign in
@@ -712,10 +712,10 @@ function UpdatesSection() {
               Latest updates
             </h2>
             <Link
-              href="/upload"
+              href="/dashboard"
               className="text-xs font-semibold text-neutral-500 transition-colors hover:text-black"
             >
-              Open upload
+              Open dashboard
             </Link>
           </div>
         </FadeUp>
@@ -776,10 +776,10 @@ function CtaSection() {
                 Experience Relay
               </Link>
               <Link
-                href="/upload"
+                href="/dashboard"
                 className="inline-flex items-center justify-center rounded-full border border-white/15 px-7 py-3 text-xs font-semibold text-white transition-colors hover:border-white/40"
               >
-                Open upload
+                Open dashboard
               </Link>
             </div>
             <div className="flex items-center justify-center pt-6">

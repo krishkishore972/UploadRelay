@@ -19,7 +19,12 @@ const statusLabels: Record<UploadStatus, string> = {
   failed: "Upload failed",
 };
 
-export function UploadForm() {
+type UploadFormProps = {
+  onUploaded?: () => void;
+  onClose?: () => void;
+};
+
+export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
@@ -38,7 +43,7 @@ export function UploadForm() {
       alert("Please select a video");
       return;
     }
-    
+
     let videoId: string | null = null;
     let uploadKey: string | null = null;
     let uploadId: string | null = null;
@@ -56,7 +61,7 @@ export function UploadForm() {
           fileName: videoFile.name,
           fileType: videoFile.type,
           fileSize: videoFile.size,
-          title: title
+          title: title,
         },
       );
 
@@ -121,7 +126,7 @@ export function UploadForm() {
       console.log("completed upload:", completeResponse.data);
       setUploadProgress(100);
       setUploadStatus("completed");
-      
+      onUploaded?.();
     } catch (error) {
       console.error(error);
 
@@ -148,74 +153,79 @@ export function UploadForm() {
     uploadStatus === "uploading" ||
     uploadStatus === "completing";
 
-  return (
-    <form
-      className="mx-auto w-full max-w-2xl rounded-lg border border-background-200 bg-background-100/80 p-5 shadow-2xl shadow-primary-50/20 sm:p-7"
-      onSubmit={handleSubmit}
-    >
-      <div className="mb-7">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-accent-800">
-          UploadRelay
+  if (uploadStatus === "completed") {
+    return (
+      <div className="flex flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl">
+          ✓
+        </span>
+        <h3 className="mt-4 text-base font-semibold text-text-950">
+          Upload complete
+        </h3>
+        <p className="mt-1 max-w-xs text-sm leading-6 text-text-600">
+          Your master cut is now processing. You can track its status from the
+          dashboard.
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight text-text-950 sm:text-4xl">
-          Upload a final video
-        </h1>
-        <p className="mt-3 max-w-xl text-sm leading-6 text-text-800">
-          The browser uploads the original file to S3 in multipart chunks. After
-          approval, this original can be sent to the creator&apos;s YouTube
-          channel.
-        </p>
-      </div>
-
-      <div className="space-y-5">
-        <label className="block">
-          <span className="text-sm font-medium text-text-900">Video title</span>
-          <input
-            className="mt-2 h-11 w-full rounded-md border border-background-200 bg-background-50 px-3 text-sm text-text-950 outline-none transition placeholder:text-text-700 focus:border-accent-700 focus:ring-2 focus:ring-accent-700/20"
-            type="text"
-            placeholder="Enter the title"
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-          />
-        </label>
-
-        <FilePicker onFileSelect={setVideoFile} />
-
-        {videoFile ? <UploadSummary file={videoFile} /> : null}
-
-        {uploadStatus !== "idle" ? (
-          <div className="rounded-lg border border-background-200 bg-background-50/70 p-4">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium text-text-950">
-                {statusLabels[uploadStatus]}
-              </p>
-              <p className="text-sm font-semibold text-accent-800">
-                {uploadProgress}%
-              </p>
-            </div>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-background-200">
-              <div
-                className="h-full rounded-full bg-accent-700 transition-all duration-300"
-                style={{ width: `${uploadProgress}%` }}
-              />
-            </div>
-          </div>
-        ) : null}
-
-        {errorMessage ? (
-          <p className="rounded-md border border-accent-700/30 bg-accent-700/10 px-3 py-2 text-sm text-accent-900">
-            {errorMessage}
-          </p>
-        ) : null}
-
         <Button
-          className="h-11 w-full bg-primary-700 font-semibold text-text-50 hover:bg-primary-800"
-          disabled={isUploading}
-          type="submit"
+          className="mt-5 h-10 bg-primary-700 font-semibold text-text-50 hover:bg-primary-800"
+          type="button"
+          onClick={onClose}
         >
-          {isUploading ? statusLabels[uploadStatus] : "Upload"}
+          Back to dashboard
         </Button>
       </div>
+    );
+  }
+
+  return (
+    <form className="space-y-5" onSubmit={handleSubmit}>
+      <label className="block">
+        <span className="text-sm font-medium text-text-900">Video title</span>
+        <input
+          className="mt-2 h-11 w-full rounded-md border border-background-200 bg-background-50 px-3 text-sm text-text-950 outline-none transition placeholder:text-text-700 focus:border-primary-700 focus:ring-2 focus:ring-primary-700/20"
+          type="text"
+          placeholder="Enter the title"
+          value={title}
+          onChange={(event) => setTitle(event.target.value)}
+        />
+      </label>
+
+      <FilePicker onFileSelect={setVideoFile} />
+
+      {videoFile ? <UploadSummary file={videoFile} /> : null}
+
+      {uploadStatus !== "idle" ? (
+        <div className="rounded-lg border border-background-200 bg-background-50/70 p-4">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm font-medium text-text-950">
+              {statusLabels[uploadStatus]}
+            </p>
+            <p className="text-sm font-semibold text-primary-700">
+              {uploadProgress}%
+            </p>
+          </div>
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-background-200">
+            <div
+              className="h-full rounded-full bg-primary-700 transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {errorMessage ? (
+        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          {errorMessage}
+        </p>
+      ) : null}
+
+      <Button
+        className="h-11 w-full bg-primary-700 font-semibold text-text-50 hover:bg-primary-800"
+        disabled={isUploading}
+        type="submit"
+      >
+        {isUploading ? statusLabels[uploadStatus] : "Upload"}
+      </Button>
     </form>
   );
 }
