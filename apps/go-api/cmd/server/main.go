@@ -81,10 +81,10 @@ func main() {
 }
 
 func withCORS(next http.Handler) http.Handler {
-    allowedOrigins := map[string]bool{
-        "http://localhost:3000": true,
-        "https://upload-relay-r184yxz5r-krishkishore972-gmailcoms-projects.vercel.app": true,
-    }
+	allowedOrigins := map[string]bool{
+		"http://localhost:3000":       true,
+		"https://upload-relay-web.vercel.app": true,
+	}
 
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
         origin := r.Header.Get("Origin")
