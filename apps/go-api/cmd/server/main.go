@@ -17,7 +17,7 @@ func main() {
 	asynqClient := queue.NewAsynqClient(cfg)
 	defer asynqClient.Close()
 
-    db, err := db.Connect(cfg.DatabaseUrl)
+	db, err := db.Connect(cfg.DatabaseUrl)
 	if err != nil {
 		log.Fatalf("failed to connect to database: %v", err)
 	}
@@ -27,16 +27,16 @@ func main() {
 
 	mux.HandleFunc("GET /health", handlers.Health)
 
-	multipartHandler, err := handlers.NewMultipartHandler(cfg,asynqClient,db)
+	multipartHandler, err := handlers.NewMultipartHandler(cfg, asynqClient, db)
 	if err != nil {
 		log.Fatalf("failed to create multipart handler: %v", err)
 	}
 
-	videoHandler,err := handlers.NewVideHandler(db)
+	videoHandler, err := handlers.NewVideHandler(db)
 	if err != nil {
 		log.Fatalf("failed to create video handler: %v", err)
 	}
-	
+
 	// multipart
 	mux.Handle(
 		"POST /uploads/create",
@@ -81,29 +81,27 @@ func main() {
 }
 
 func withCORS(next http.Handler) http.Handler {
-	allowedOrigins := map[string]bool{
-        "http://localhost:3000":          true,
-        "https://upload-relay-r184yxz5r-krishkishore972-gmailcoms-projects.vercel.app":    true,
+    allowedOrigins := map[string]bool{
+        "http://localhost:3000": true,
+        "https://upload-relay-r184yxz5r-krishkishore972-gmailcoms-projects.vercel.app": true,
     }
 
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        origin := r.Header.Get("Origin")
 
-		if allowedOrigins[origin] {
+        if allowedOrigins[origin] {
             w.Header().Set("Access-Control-Allow-Origin", origin)
             w.Header().Set("Vary", "Origin")
         }
 
-		
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
+        if r.Method == http.MethodOptions {
+            w.WriteHeader(http.StatusNoContent)
+            return
+        }
 
-		next.ServeHTTP(w, r)
-	})
+        next.ServeHTTP(w, r)
+    })
 }
-
