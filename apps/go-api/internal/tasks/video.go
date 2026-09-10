@@ -2,6 +2,7 @@ package tasks
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -24,5 +25,6 @@ func AddTranscodejob(videoID, sourceKey string) *asynq.Task {
 		TypeVideoTranscode,
 		data,
 		asynq.MaxRetry(5),
+		asynq.Timeout(20*time.Minute), 
 	)
 }
