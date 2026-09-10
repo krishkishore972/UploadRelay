@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const goApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_GO_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
 });
 
 let token: string | null = null;
