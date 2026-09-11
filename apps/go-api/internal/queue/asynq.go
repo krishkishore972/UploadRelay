@@ -2,6 +2,7 @@ package queue
 
 import (
 	"go-api/internal/config"
+	"time"
 
 	"github.com/hibiken/asynq"
 )
@@ -20,6 +21,8 @@ func NewAsynqClient(cfg config.Config) *asynq.Client {
 func NewAsynqServer(cfg config.Config) *asynq.Server {
 	return asynq.NewServer(redisOpt(cfg), asynq.Config{
 		Concurrency: 1,
+		HealthCheckInterval: 60 * time.Second,
+		DelayedTaskCheckInterval: 60 * time.Second,
 	})
 }
 
