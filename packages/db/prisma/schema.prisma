@@ -56,10 +56,28 @@ model User {
   uploadedVideos Video[] @relation("EditorVideos")
   creatorVideos  Video[] @relation("CreatorVideos")
 
+  inviteCode String? @unique
+
+creatorLinks CreatorEditorLink[] @relation("CreatorLinks")
+editorLinks  CreatorEditorLink[] @relation("EditorLinks")
+
   youtubeConnection YouTubeConnection?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model CreatorEditorLink {
+  id        String   @id @default(uuid())
+  creatorId String
+  creator   User     @relation("CreatorLinks", fields: [creatorId], references: [id], onDelete: Cascade)
+  editorId  String
+  editor    User     @relation("EditorLinks", fields: [editorId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([creatorId, editorId])
+  @@index([creatorId])
+  @@index([editorId])
 }
 
 model Video {

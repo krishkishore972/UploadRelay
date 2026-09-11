@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS "CreatorEditorLink";
+ALTER TABLE "User" DROP COLUMN IF EXISTS "inviteCode";
