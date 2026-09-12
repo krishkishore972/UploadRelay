@@ -109,7 +109,7 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	`,
 		creatorID,
 		editorID,
-	).Scan(&linkID, createdAt)
+	).Scan(&linkID,&createdAt)
 
 	alreadyLinked := false
 	if errors.Is(err, sql.ErrNoRows) {
@@ -139,5 +139,110 @@ func (h *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		ID: creatorID, Name: name, Email: creatorEmail,
 		CreatedAt: createdAt, AlreadyLinked: alreadyLinked,
 	})
+
+}
+
+type LinkedPersonResponse struct {
+	ID       string    `json:"id"`
+	Name     *string   `json:"name"`
+	Email    string    `json:"email"`
+	LinkedAt time.Time `json:"linkedAt"`
+}
+
+type GetLinksResponse struct {
+	Creators []LinkedPersonResponse `json:"creators,omitempty"`
+	Editors  []LinkedPersonResponse `json:"editors,omitempty"`
+}
+
+// GET /links — role-aware:
+// EDITOR → linked creators (for upload dropdown)
+// CREATOR → linked editors (for team list)
+
+func (h *LinkHandler) GetLinks(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	var role string
+	if err := h.db.QueryRowContext(r.Context(),
+		`SELECT "role" FROM "User" WHERE "id" = $1`, userID,
+	).Scan(&role); err != nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	if role == "CREATOR" {
+		rows, err := h.db.QueryContext(r.Context(),
+			`SELECT u."id", u."name", u."email", l."createdAt"
+			 FROM "CreatorEditorLink" l
+			 JOIN "User" u ON u."id" = l."editorId"
+			 WHERE l."creatorId" = $1
+			 ORDER BY l."createdAt" DESC`, userID)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch links"})
+			return
+		}
+		defer rows.Close()
+
+		editors := []LinkedPersonResponse{}
+		for rows.Next() {
+			var p LinkedPersonResponse
+			var name sql.NullString
+
+			if err := rows.Scan(&p.ID, &name, &p.Email, &p.LinkedAt); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read links"})
+				return
+			}
+			if name.Valid {
+				p.Name = &name.String
+			}
+			editors = append(editors, p)
+		}
+		if err := rows.Err(); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "Failed to read links",
+			})
+			return
+		}
+		writeJSON(w, http.StatusOK, GetLinksResponse{Editors: editors})
+		return
+	}
+
+	// EDITOR + ADMIN → linked creators
+	rows, err := h.db.QueryContext(r.Context(),
+		`SELECT u."id", u."name", u."email", l."createdAt"
+ FROM "CreatorEditorLink" l
+ JOIN "User" u ON u."id" = l."creatorId"
+ WHERE l."editorId" = $1
+ ORDER BY l."createdAt" DESC`, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch links"})
+		return
+	}
+	defer rows.Close()
+
+	creators := []LinkedPersonResponse{}
+
+	for rows.Next() {
+		var p LinkedPersonResponse
+		var name sql.NullString
+		if err := rows.Scan(&p.ID, &name, &p.Email, &p.LinkedAt); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read links"})
+			return
+		}
+		if name.Valid {
+			p.Name = &name.String
+		}
+		creators = append(creators, p)
+	}
+	if err := rows.Err(); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to read links",
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, GetLinksResponse{Creators: creators})
 
 }

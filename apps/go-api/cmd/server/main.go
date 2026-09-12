@@ -76,6 +76,11 @@ func main() {
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(linkHandler.CreateLink)),
 	)
 
+	mux.Handle(
+		"GET /links",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(linkHandler.GetLinks)),
+	)
+
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      withCORS(mux),
