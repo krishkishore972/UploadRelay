@@ -88,6 +88,7 @@ type CreateMultipartUploadRequest struct {
 	FileType string `json:"fileType"`
 	FileSize int64  `json:"fileSize"`
 	Title    string `json:"title"`
+	CreatorID string `json:"creatorId"`
 }
 
 type CreateMultipartUploadResponse struct {
@@ -126,6 +127,49 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		return
 	}
 
+	creatorID := strings.TrimSpace(req.CreatorID)
+	if creatorID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "creatorId is required — link a creator first",
+		})
+		return
+	}
+
+	// Verify target is a creator
+	var creatorRole string
+	err := h.db.QueryRowContext(r.Context(),
+		`SELECT "role" FROM "User" WHERE "id" = $1`, creatorID,
+	).Scan(&creatorRole)
+	if errors.Is(err, sql.ErrNoRows) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Creator not found"})
+		return
+	}
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to verify creator"})
+		return
+	}
+	if creatorRole != "CREATOR" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Target user is not a creator"})
+		return
+	}
+
+	// Verify link exists — skip only for solo creator uploading to self
+	if creatorID != userID {
+		var linkExists bool
+		err = h.db.QueryRowContext(r.Context(),
+			`SELECT EXISTS(SELECT 1 FROM "CreatorEditorLink" WHERE "creatorId" = $1 AND "editorId" = $2)`,
+			creatorID, userID,
+		).Scan(&linkExists)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to verify link"})
+			return
+		}
+		if !linkExists {
+			writeJSON(w, http.StatusForbidden, map[string]string{"error": "Creator not linked — send invite code first"})
+			return
+		}
+	}
+
 	/*
 		This is acceptable, but the folder shape is a little noisy. A cleaner future shape would be:
 		uploads/{videoID}/original.mp4
@@ -153,11 +197,7 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 	uploadID := aws.ToString(result.UploadId)
 
 	var videoID string
-	/*
-		both editorId and creatorId to userID.
-		That is okay for solo-MVP testing, but it is not correct for real creator/editor workflow.
-		Later creatorId should come from selected creator/workspace/invite relationship.
-	*/
+
 	err = h.db.QueryRowContext(
 		r.Context(),
 		`
@@ -177,7 +217,7 @@ func (h *MultipartHandler) CreateMultipartUpload(w http.ResponseWriter, r *http.
 		RETURNING "id"
 		`,
 		userID,
-		userID,
+		creatorID,
 		req.FileName,
 		key,
 		req.FileType,
