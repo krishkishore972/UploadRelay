@@ -208,6 +208,20 @@
 }
 
 @layer utilities {
+  .striped-render-accent {
+    background: repeating-linear-gradient(
+      -45deg,
+      #121316,
+      #121316 16px,
+      #1a1b1f 16px,
+      #1a1b1f 32px
+    );
+  }
+
+  .smooth-transition {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
   .headline-display {
     letter-spacing: -0.04em;
     line-height: 1.05;

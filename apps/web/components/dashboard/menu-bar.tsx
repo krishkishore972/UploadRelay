@@ -1,12 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { UploadCloud } from "lucide-react";
+import { Search } from "lucide-react";
 
-import { cn } from "@/lib/utils";
 import { initials } from "@/lib/dashboard/format";
-import { useUploadDialog } from "@/components/upload/upload-dialog-context";
 
 export type MenuBarUser = {
   name?: string | null;
@@ -15,73 +12,93 @@ export type MenuBarUser = {
 };
 
 export function MenuBar({ user }: { user: MenuBarUser }) {
-  const pathname = usePathname();
-  const { openUpload } = useUploadDialog();
-  const isDashboardActive =
-    pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const roleLabel =
+    user.role === "CREATOR" ? "Creator Portal" : "Studio Portal";
+
+  function handleSearch(value: string) {
+    window.dispatchEvent(
+      new CustomEvent<string>("ur:search", { detail: value }),
+    );
+  }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-background-200 bg-background-50/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
-        <Link
-          href="/dashboard"
-          className="group flex shrink-0 items-center gap-2.5"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-700 text-sm font-extrabold text-text-50 shadow-sm transition-transform group-hover:scale-105">
-            R
-          </span>
-          <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-text-950">
-            UploadRelay
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary-700" />
-          </span>
-        </Link>
-
-        <nav className="flex items-center gap-1" aria-label="Primary">
+    <header className="w-full" data-purpose="main-header">
+      <nav
+        aria-label="Global Navigation"
+        className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200/80 bg-white px-6 py-3 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)] md:rounded-full"
+      >
+        <div className="flex items-center gap-8">
           <Link
             href="/dashboard"
-            aria-current={isDashboardActive ? "page" : undefined}
-            className={cn(
-              "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              isDashboardActive
-                ? "bg-background-200 text-text-950"
-                : "text-text-700 hover:bg-background-100 hover:text-text-950",
-            )}
+            className="flex items-center gap-2.5 rounded-lg p-0.5 focus:outline-none focus:ring-2 focus:ring-neutral-900"
           >
-            Dashboard
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0a0a0c] text-sm font-extrabold text-white shadow-sm">
+              R
+            </span>
+            <span className="text-lg font-bold tracking-tight text-neutral-950">
+              UploadRelay
+            </span>
           </Link>
-          <button
-            type="button"
-            onClick={openUpload}
-            className={cn(
-              "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-              "text-text-700 hover:bg-background-100 hover:text-text-950",
-            )}
-          >
-            Upload
-          </button>
-        </nav>
-
-        <button
-          type="button"
-          onClick={openUpload}
-          className="hidden items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-semibold text-text-50 transition-colors hover:bg-primary-800 sm:inline-flex"
-        >
-          <UploadCloud className="size-4" aria-hidden="true" />
-          Upload
-        </button>
-
-        <div className="flex items-center gap-3 pl-1">
-          <div className="hidden text-right sm:block">
-            <p className="text-xs font-semibold leading-tight text-text-950">
-              {user.name || "Editor"}
-            </p>
-            <p className="text-[11px] capitalize leading-tight text-text-600">
-              {user.role?.toLowerCase() || "member"}
-            </p>
+          <div className="hidden items-center gap-6 text-xs font-medium text-neutral-600 lg:flex">
+            <Link
+              href="/dashboard#library"
+              className="smooth-transition hover:text-neutral-950"
+            >
+              Pipelines
+            </Link>
+            <Link
+              href="/dashboard#activity"
+              className="smooth-transition hover:text-neutral-950"
+            >
+              Documentation
+            </Link>
+            <span className="flex items-center gap-1.5 font-mono text-[11px]">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              <span>API Operational</span>
+            </span>
           </div>
-          <span className="flex h-8 w-8 items-center justify-center rounded-full border border-background-200 bg-primary-700/10 text-xs font-bold text-primary-700">
-            {initials(user.name ?? null, user.email ?? "U")}
+        </div>
+
+        <div className="mx-4 hidden max-w-lg flex-1 md:block">
+          <div className="relative">
+            <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-400">
+              <Search className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <input
+              type="search"
+              placeholder="Search master cuts, staging packages, tags..."
+              onChange={(e) => handleSearch(e.target.value)}
+              className="smooth-transition w-full rounded-full border border-neutral-200 bg-neutral-50 py-2 pl-10 pr-4 text-xs text-neutral-800 placeholder-neutral-400 hover:bg-neutral-100/70 focus:border-neutral-900 focus:bg-white focus:outline-none focus:ring-1 focus:ring-neutral-900"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="hidden border border-neutral-200/60 bg-neutral-100 px-3.5 py-1.5 font-mono text-xs font-medium text-neutral-600 sm:inline-block rounded-full">
+            {roleLabel}
           </span>
+          <div
+            className="group flex cursor-pointer items-center gap-2"
+            title={user.email ?? "Account settings"}
+          >
+            <div className="smooth-transition flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-950 text-xs font-bold text-white group-hover:bg-neutral-800">
+              {initials(user.name ?? null, user.email ?? "U")}
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="mx-1 mt-3 md:hidden">
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-neutral-400">
+            <Search className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <input
+            type="search"
+            placeholder="Search master cuts..."
+            onChange={(e) => handleSearch(e.target.value)}
+            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-10 pr-4 text-xs text-neutral-800 placeholder-neutral-400 focus:border-neutral-900 focus:outline-none focus:ring-1 focus:ring-neutral-900"
+          />
         </div>
       </div>
     </header>
