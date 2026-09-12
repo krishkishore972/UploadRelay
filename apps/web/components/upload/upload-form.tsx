@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import axios from "axios";
 
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,21 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const [title, setTitle] = useState("");
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [creators, setCreators] = useState<
+    { id: string; name: string | null; email: string }[]
+  >([]);
+  const [creatorId, setCreatorId] = useState("");
+
+  useEffect(() => {
+    goApi
+      .get("/links")
+      .then((res) => {
+        const list = res.data.creators ?? [];
+        setCreators(list);
+        if (list.length === 1) setCreatorId(list[0].id);
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -41,6 +56,11 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
 
     if (!videoFile) {
       alert("Please select a video");
+      return;
+    }
+
+    if (!creatorId) {
+      alert("Please select a creator");
       return;
     }
 
@@ -62,6 +82,7 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
           fileType: videoFile.type,
           fileSize: videoFile.size,
           title: title,
+          creatorId: creatorId,
         },
       );
 
@@ -191,6 +212,27 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
       </label>
 
       <FilePicker onFileSelect={setVideoFile} />
+
+      <label className="block">
+        <span className="text-sm font-medium text-text-900">Creator</span>
+        <select
+          value={creatorId}
+          onChange={(event) => setCreatorId(event.target.value)}
+          className="mt-2 h-11 w-full rounded-md border border-background-200 bg-background-50 px-3 text-sm text-text-950 outline-none transition focus:border-primary-700 focus:ring-2 focus:ring-primary-700/20"
+        >
+          <option value="">Select creator…</option>
+          {creators.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name ? `${c.name} (${c.email})` : c.email}
+            </option>
+          ))}
+        </select>
+        {creators.length === 0 ? (
+          <p className="mt-1 text-xs text-amber-700">
+            No linked creators — link one from the dashboard first.
+          </p>
+        ) : null}
+      </label>
 
       {videoFile ? <UploadSummary file={videoFile} /> : null}
 

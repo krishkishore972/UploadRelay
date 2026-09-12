@@ -60,6 +60,30 @@ export function VideoDetail({ videoId }: { videoId: string }) {
   const [video, setVideo] = useState<VideoDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isCreator, setIsCreator] = useState(false);
+  const [acting, setActing] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/auth/session").then(async (r) => {
+      if (!r.ok) return;
+      const session = await r.json();
+      setIsCreator(session?.user?.role === "CREATOR");
+    });
+  }, []);
+
+  async function act(path: "submit" | "approve" | "reject") {
+    setActing(true);
+    try {
+      await goApi.post(`/videos/${videoId}/${path}`);
+      const response = await goApi.get<VideoDetail>(`/videos/${videoId}`);
+      setVideo(response.data);
+    } catch (error) {
+      console.error(error);
+      alert("Action failed. Check video status and your role.");
+    } finally {
+      setActing(false);
+    }
+  }
 
   useEffect(() => {
     async function loadVideo() {
@@ -136,6 +160,40 @@ export function VideoDetail({ videoId }: { videoId: string }) {
           {status.label}
         </span>
       </div>
+
+      {video.status === "PREVIEW_READY" && !isCreator ? (
+        <div className="mt-4">
+          <button
+            type="button"
+            disabled={acting}
+            onClick={() => act("submit")}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary-700 px-5 text-sm font-semibold text-text-50 transition-colors hover:bg-primary-800 disabled:opacity-50"
+          >
+            {acting ? "Submitting…" : "Submit for review"}
+          </button>
+        </div>
+      ) : null}
+
+      {video.status === "APPROVAL_REQUESTED" && isCreator ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={acting}
+            onClick={() => act("approve")}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {acting ? "Approving…" : "Approve"}
+          </button>
+          <button
+            type="button"
+            disabled={acting}
+            onClick={() => act("reject")}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-5 text-sm font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50"
+          >
+            {acting ? "Rejecting…" : "Request changes"}
+          </button>
+        </div>
+      ) : null}
 
       <h1 className="mt-6 max-w-3xl text-2xl font-semibold tracking-tight text-text-950 sm:text-3xl">
         {video.title || video.originalFileName}
