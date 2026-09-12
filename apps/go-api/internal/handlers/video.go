@@ -113,6 +113,98 @@ func (h *VideoHandler) GetEditorVideos(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type CreatorVideoResponse struct {
+	ID                string    `json:"id"`
+	Title             *string   `json:"title"`
+	OriginalFileName  string    `json:"originalFileName"`
+	OriginalS3Key     string    `json:"originalS3Key"`
+	OriginalMimeType  *string   `json:"originalMimeType"`
+	OriginalSize      *int64    `json:"originalSize"`
+	PreviewPrefix     *string   `json:"previewPrefix"`
+	MasterPlaylistKey *string   `json:"masterPlaylistKey"`
+	Status            string    `json:"status"`
+	EditorID          string    `json:"editorId"`
+	EditorName        *string   `json:"editorName"`
+	EditorEmail       string    `json:"editorEmail"`
+	CreatedAt         time.Time `json:"createdAt"`
+	UpdatedAt         time.Time `json:"updatedAt"`
+}
+
+type GetCreatorVideosResponse struct {
+	Videos []CreatorVideoResponse `json:"videos"`
+}
+
+// GET /videos/creator
+func (h *VideoHandler) GetCreatorVideos(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+
+	rows, err := h.db.QueryContext(r.Context(),
+		`
+		SELECT
+			v."id",
+			v."title",
+			v."originalFileName",
+			v."originalS3Key",
+			v."originalMimeType",
+			v."originalSize",
+			v."previewPrefix",
+			v."masterPlaylistKey",
+			v."status",
+			v."editorId",
+			e."name",
+			e."email",
+			v."createdAt",
+			v."updatedAt"
+		FROM "Video" v
+		JOIN "User" e ON e."id" = v."editorId"
+		WHERE v."creatorId" = $1
+		ORDER BY v."createdAt" DESC
+		`, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to fetch videos"})
+		return
+	}
+	defer rows.Close()
+
+	videos := []CreatorVideoResponse{}
+	for rows.Next() {
+		var video CreatorVideoResponse
+		var editorName sql.NullString
+		if err := rows.Scan(
+			&video.ID,
+			&video.Title,
+			&video.OriginalFileName,
+			&video.OriginalS3Key,
+			&video.OriginalMimeType,
+			&video.OriginalSize,
+			&video.PreviewPrefix,
+			&video.MasterPlaylistKey,
+			&video.Status,
+			&video.EditorID,
+			&editorName,
+			&video.EditorEmail,
+			&video.CreatedAt,
+			&video.UpdatedAt,
+		); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read videos"})
+			return
+		}
+		if editorName.Valid {
+			video.EditorName = &editorName.String
+		}
+		videos = append(videos, video)
+	}
+	if err := rows.Err(); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to read videos"})
+		return
+	}
+	writeJSON(w, http.StatusOK, GetCreatorVideosResponse{Videos: videos})
+}
+
 type ChannelResponse struct {
 	ChannelID          *string `json:"channelId"`
 	ChannelTitle       *string `json:"channelTitle"`
@@ -194,7 +286,7 @@ func (h *VideoHandler) GetVideoDetail(w http.ResponseWriter, r *http.Request) {
 	FROM "Video" v
 	JOIN "User" u ON u."id" = v."creatorId"
 	LEFT JOIN "YouTubeConnection" c ON c."userId" = u."id"
-	WHERE v."id" = $1 AND v."editorId" = $2
+	WHERE v."id" = $1 AND (v."editorId" = $2 OR v."creatorId" = $2)
 	`,
 		videoID,
 		userID,

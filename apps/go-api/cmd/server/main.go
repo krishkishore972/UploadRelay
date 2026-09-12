@@ -65,6 +65,12 @@ func main() {
 		"GET /videos/editor",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetEditorVideos)),
 	)
+
+	mux.Handle(
+		"GET /videos/creator",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetCreatorVideos)),
+	)
+	
 	mux.Handle(
 		"GET /videos/{id}",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetVideoDetail)),
