@@ -5,14 +5,9 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import {
   ChevronRight,
-  CircleGauge,
   Clapperboard,
-  Heart,
-  History,
   LayoutGrid,
   LogOut,
-  MessagesSquare,
-  Settings2,
   UploadCloud,
   User as UserIcon,
 } from "lucide-react";
@@ -26,6 +21,7 @@ export function DashboardSidebar({ user }: { user: MenuBarUser }) {
   const { openUpload } = useUploadDialog();
   const onDashboard =
     pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const isCreator = user.role === "CREATOR";
 
   const linkClass = (active: boolean) =>
     cn(
@@ -68,52 +64,27 @@ export function DashboardSidebar({ user }: { user: MenuBarUser }) {
             <LayoutGrid className={iconClass(onDashboard)} aria-hidden="true" />
             <span>Overview</span>
           </Link>
-          <Link
-            href="/dashboard#library"
-            className={linkClass(false)}
-          >
-            <Clapperboard className={iconClass(false)} aria-hidden="true" />
-            <span>Master Deliveries</span>
-          </Link>
-          <button
-            type="button"
-            onClick={openUpload}
-            className={cn(linkClass(false), "w-full text-left")}
-          >
-            <UploadCloud className={iconClass(false)} aria-hidden="true" />
-            <span>New Upload</span>
-          </button>
-          <Link href="/dashboard#stats" className={linkClass(false)}>
-            <CircleGauge className={iconClass(false)} aria-hidden="true" />
-            <span>Relay Credits &amp; Quota</span>
-          </Link>
-          <Link href="/dashboard#activity" className={linkClass(false)}>
-            <History className={iconClass(false)} aria-hidden="true" />
-            <span>Bandwidth History</span>
-          </Link>
           <Link href="/dashboard#library" className={linkClass(false)}>
-            <Heart className={iconClass(false)} aria-hidden="true" />
-            <span>Starred Cuts</span>
+            <Clapperboard className={iconClass(false)} aria-hidden="true" />
+            <span>{isCreator ? "Review Queue" : "Master Deliveries"}</span>
           </Link>
-          <span
-            className={cn(
-              linkClass(false),
-              "cursor-not-allowed opacity-60",
-            )}
-            title="Coming soon"
-          >
-            <MessagesSquare className={iconClass(false)} aria-hidden="true" />
-            <span>Support &amp; Engineering</span>
-            <span className="ml-auto rounded-full bg-neutral-100 px-2 py-0.5 font-mono text-[10px] text-neutral-500">
-              Soon
-            </span>
-          </span>
+          {isCreator ? null : (
+            <button
+              type="button"
+              onClick={openUpload}
+              className={cn(linkClass(false), "w-full text-left")}
+            >
+              <UploadCloud className={iconClass(false)} aria-hidden="true" />
+              <span>New Upload</span>
+            </button>
+          )}
+          {/* Placeholder: YouTube connect, comments/activity, versions land here post-MVP. */}
           <span
             className={cn(linkClass(false), "cursor-not-allowed opacity-60")}
-            title="Coming soon"
+            title="Coming soon: YouTube connect, comments, version history"
           >
-            <Settings2 className={iconClass(false)} aria-hidden="true" />
-            <span>API &amp; Webhooks</span>
+            <span className="h-4 w-4 text-center text-neutral-400">○</span>
+            <span>Publishing & Activity</span>
             <span className="ml-auto rounded-full bg-neutral-100 px-2 py-0.5 font-mono text-[10px] text-neutral-500">
               Soon
             </span>

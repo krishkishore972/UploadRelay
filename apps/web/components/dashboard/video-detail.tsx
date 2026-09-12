@@ -324,6 +324,17 @@ export function VideoDetail({ videoId }: { videoId: string }) {
                 </p>
               )}
             </div>
+
+            {/* Placeholder (post-MVP): direct YouTube publishing + OAuth connect.
+                Per README, publishing is not in the working vertical slice yet. */}
+            {video.status === "APPROVED" ? (
+              <p className="mt-3 rounded-xl border border-dashed border-background-200 bg-background-50 p-3 text-[11px] leading-5 text-text-500">
+                Approved — direct publish to YouTube lands here next (OAuth +
+                publish worker).
+              </p>
+            ) : null}
+
+            {/* Placeholder (post-MVP): comment thread + version history land here. */}
           </div>
 
           <div className="rounded-2xl border border-background-200 bg-background-100 p-5 shadow-sm">
