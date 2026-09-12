@@ -37,6 +37,11 @@ func main() {
 		log.Fatalf("failed to create video handler: %v", err)
 	}
 
+	linkHandler, err := handlers.NewLinkHandler(db)
+	if err != nil {
+		log.Fatalf("failed to create link handler: %v", err)
+	}
+
 	// multipart
 	mux.Handle(
 		"POST /uploads/create",
@@ -65,6 +70,12 @@ func main() {
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetVideoDetail)),
 	)
 
+	// link handler
+	mux.Handle(
+		"POST /links",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(linkHandler.CreateLink)),
+	)
+
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      withCORS(mux),
@@ -82,26 +93,26 @@ func main() {
 
 func withCORS(next http.Handler) http.Handler {
 	allowedOrigins := map[string]bool{
-		"http://localhost:3000":       true,
+		"http://localhost:3000":               true,
 		"https://upload-relay-web.vercel.app": true,
 	}
 
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        origin := r.Header.Get("Origin")
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		origin := r.Header.Get("Origin")
 
-        if allowedOrigins[origin] {
-            w.Header().Set("Access-Control-Allow-Origin", origin)
-            w.Header().Set("Vary", "Origin")
-        }
+		if allowedOrigins[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+		}
 
-        w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-        w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
-        if r.Method == http.MethodOptions {
-            w.WriteHeader(http.StatusNoContent)
-            return
-        }
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
 
-        next.ServeHTTP(w, r)
-    })
+		next.ServeHTTP(w, r)
+	})
 }
