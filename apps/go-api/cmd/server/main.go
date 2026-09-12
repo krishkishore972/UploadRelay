@@ -70,10 +70,22 @@ func main() {
 		"GET /videos/creator",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetCreatorVideos)),
 	)
-	
+
 	mux.Handle(
 		"GET /videos/{id}",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.GetVideoDetail)),
+	)
+	mux.Handle(
+		"POST /videos/{id}/submit",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.SubmitForReview)),
+	)
+	mux.Handle(
+		"POST /videos/{id}/approve",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.ApproveVideo)),
+	)
+	mux.Handle(
+		"POST /videos/{id}/reject",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(videoHandler.RejectVideo)),
 	)
 
 	// link handler
