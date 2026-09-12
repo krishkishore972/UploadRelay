@@ -235,7 +235,7 @@ type VideoDetailResponse struct {
 	Creator           CreatorResponse `json:"creator"`
 }
 
-//GET /videos/{id}
+
 func (h *VideoHandler) GetVideoDetail(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
@@ -342,4 +342,103 @@ func optionalString(value sql.NullString) *string {
 		return nil
 	}
 	return &value.String
+}
+
+// POST /videos/{id}/submit — editor only
+// PREVIEW_READY → APPROVAL_REQUESTED
+func (h *VideoHandler) SubmitForReview(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+	videoID := r.PathValue("id")
+	if videoID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Video ID is required"})
+		return
+	}
+
+	result, err := h.db.ExecContext(r.Context(),
+		`UPDATE "Video"
+		 SET "status" = 'APPROVAL_REQUESTED',
+		     "approvalRequestedAt" = CURRENT_TIMESTAMP,
+		     "updatedAt" = CURRENT_TIMESTAMP
+		 WHERE "id" = $1 AND "editorId" = $2 AND "status" = 'PREVIEW_READY'`,
+		videoID, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to submit video"})
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows != 1 {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "Only preview-ready videos can be submitted, or not your video"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "APPROVAL_REQUESTED"})
+}
+
+// POST /videos/{id}/approve — creator only
+// APPROVAL_REQUESTED → APPROVED
+func (h *VideoHandler) ApproveVideo(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+	videoID := r.PathValue("id")
+	if videoID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Video ID is required"})
+		return
+	}
+
+	result, err := h.db.ExecContext(r.Context(),
+		`UPDATE "Video"
+		 SET "status" = 'APPROVED',
+		     "approvedAt" = CURRENT_TIMESTAMP,
+		     "updatedAt" = CURRENT_TIMESTAMP
+		 WHERE "id" = $1 AND "creatorId" = $2 AND "status" = 'APPROVAL_REQUESTED'`,
+		videoID, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to approve video"})
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows != 1 {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "Only videos awaiting approval can be approved, or not your video"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "APPROVED"})
+}
+
+// POST /videos/{id}/reject — creator only
+// APPROVAL_REQUESTED → REJECTED
+func (h *VideoHandler) RejectVideo(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+		return
+	}
+	videoID := r.PathValue("id")
+	if videoID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Video ID is required"})
+		return
+	}
+
+	result, err := h.db.ExecContext(r.Context(),
+		`UPDATE "Video"
+		 SET "status" = 'REJECTED',
+		     "rejectedAt" = CURRENT_TIMESTAMP,
+		     "updatedAt" = CURRENT_TIMESTAMP
+		 WHERE "id" = $1 AND "creatorId" = $2 AND "status" = 'APPROVAL_REQUESTED'`,
+		videoID, userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to reject video"})
+		return
+	}
+	rows, _ := result.RowsAffected()
+	if rows != 1 {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "Only videos awaiting approval can be rejected, or not your video"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"status": "REJECTED"})
 }
