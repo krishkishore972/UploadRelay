@@ -30,7 +30,7 @@ import { HlsPlayer } from "@/components/videos/hls-player";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -53,15 +53,17 @@ function DetailRow({
   mono?: boolean;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2.5">
-      <span className="flex items-center gap-2 text-xs text-neutral-500">
+    <div className="flex flex-col gap-1 py-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:py-2.5">
+      <span className="flex shrink-0 items-center gap-2 text-xs text-neutral-500">
         {icon}
         {label}
       </span>
       <span
         className={cn(
-          "max-w-[60%] truncate text-right text-xs font-medium text-neutral-900",
-          mono && "font-mono text-[11px]",
+          "min-w-0 text-xs font-medium text-neutral-900",
+          mono
+            ? "break-all font-mono text-[11px] sm:max-w-[60%] sm:text-right"
+            : "break-words sm:max-w-[60%] sm:truncate sm:text-right",
         )}
       >
         {children}
@@ -125,9 +127,9 @@ export function VideoDetail({ videoId }: { videoId: string }) {
 
   if (isLoading) {
     return (
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <Skeleton className="aspect-video rounded-2xl" />
-        <Skeleton className="h-80 rounded-2xl" />
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <Skeleton className="aspect-video w-full rounded-2xl" />
+        <Skeleton className="h-64 w-full rounded-2xl sm:h-80" />
       </div>
     );
   }
@@ -150,17 +152,18 @@ export function VideoDetail({ videoId }: { videoId: string }) {
   const channel = video.creator.channel;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="rounded-full px-3 text-neutral-600"
-          render={<Link href="/dashboard/videos" />}
+    <div className="min-w-0 space-y-4 sm:space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+        <Link
+          href="/dashboard/videos"
+          className={cn(
+            buttonVariants({ variant: "ghost", size: "sm" }),
+            "shrink-0 rounded-full px-3 text-neutral-600",
+          )}
         >
           <ArrowLeft className="size-4" aria-hidden="true" />
           Videos
-        </Button>
+        </Link>
         <StatusBadge status={video.status} />
       </div>
 
@@ -168,6 +171,7 @@ export function VideoDetail({ videoId }: { videoId: string }) {
         <Button
           variant="brand"
           size="lg"
+          className="w-full sm:w-auto"
           disabled={acting}
           onClick={() => act("submit")}
         >
@@ -176,10 +180,11 @@ export function VideoDetail({ videoId }: { videoId: string }) {
       ) : null}
 
       {video.status === "APPROVAL_REQUESTED" && isCreator ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap">
           <Button
             variant="brand"
             size="lg"
+            className="w-full sm:w-auto"
             disabled={acting}
             onClick={() => act("approve")}
           >
@@ -188,7 +193,7 @@ export function VideoDetail({ videoId }: { videoId: string }) {
           <Button
             variant="destructive"
             size="lg"
-            className="rounded-full"
+            className="w-full rounded-full sm:w-auto"
             disabled={acting}
             onClick={() => act("reject")}
           >
@@ -197,29 +202,31 @@ export function VideoDetail({ videoId }: { videoId: string }) {
         </div>
       ) : null}
 
-      <div>
-        <h1 className="headline-display max-w-3xl text-2xl font-bold text-neutral-950 sm:text-3xl">
+      <div className="min-w-0">
+        <h1 className="headline-display max-w-3xl break-words text-xl font-bold text-neutral-950 sm:text-2xl lg:text-3xl">
           {video.title || video.originalFileName}
         </h1>
-        <p className="mt-1 text-sm text-neutral-500">{video.originalFileName}</p>
+        <p className="mt-1 break-all text-[13px] text-neutral-500 sm:text-sm">
+          {video.originalFileName}
+        </p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-6">
-          <Card className="overflow-hidden border-neutral-900 bg-neutral-950">
+      <div className="grid min-w-0 gap-4 sm:gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0 space-y-4 sm:space-y-6">
+          <Card className="min-w-0 overflow-hidden border-neutral-900 bg-neutral-950">
             {src ? (
               <HlsPlayer src={src} className="!rounded-none" />
             ) : (
-              <div className="flex aspect-video flex-col items-center justify-center gap-3 text-neutral-500">
+              <div className="flex aspect-video flex-col items-center justify-center gap-3 px-4 text-center text-neutral-500">
                 <RefreshCw className="size-6 animate-spin" aria-hidden="true" />
-                <p className="text-sm">
+                <p className="max-w-xs text-[13px] leading-6 sm:text-sm">
                   Preview is being generated. Check back shortly.
                 </p>
               </div>
             )}
           </Card>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
             <MetaStat
               icon={<FileVideo className="size-4" aria-hidden="true" />}
               label="Format"
@@ -244,8 +251,8 @@ export function VideoDetail({ videoId }: { videoId: string }) {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileVideo className="size-4 text-brand-accent" aria-hidden="true" />
+              <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                <FileVideo className="size-4 shrink-0 text-brand-accent" aria-hidden="true" />
                 File details
               </CardTitle>
             </CardHeader>
@@ -270,82 +277,82 @@ export function VideoDetail({ videoId }: { videoId: string }) {
           </Card>
         </div>
 
-        <aside className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserIcon className="size-4 text-brand-accent" aria-hidden="true" />
-                Publishing target
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-0">
-              <div className="flex items-center gap-3">
-                <Avatar>
-                  <AvatarFallback>
-                    {initials(creator.name, creator.email)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-neutral-950">
-                    {creator.name || "Creator"}
-                  </p>
-                  <p className="truncate text-xs text-neutral-500">{creator.email}</p>
-                </div>
-                <Badge variant="secondary" className="ml-auto uppercase">
+        <aside className="min-w-0 space-y-4 sm:space-y-6">
+          <Card className="min-w-0">
+            <CardContent className="space-y-3 p-4 sm:p-5">
+              <div className="flex min-w-0 items-center gap-2">
+                <UserIcon className="size-4 shrink-0 text-brand-accent" aria-hidden="true" />
+                <p className="truncate text-sm font-semibold tracking-tight text-neutral-950">
+                  Publishing target
+                </p>
+                <Badge variant="secondary" className="shrink-0 uppercase">
                   {creator.role}
                 </Badge>
               </div>
 
-              <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2 text-xs font-medium text-neutral-900">
-                    <Link2 className="size-3.5 text-brand-accent" aria-hidden="true" />
-                    YouTube channel
-                  </span>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar size="sm" className="shrink-0">
+                  <AvatarFallback className="text-[10px]">
+                    {initials(creator.name, creator.email)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1 leading-tight">
+                  <p className="truncate text-[13px] font-semibold text-neutral-950">
+                    {creator.name || "Creator"}
+                  </p>
+                  <p className="truncate text-xs text-neutral-500">{creator.email}</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="min-w-0">
+                <div className="flex min-w-0 items-center gap-2">
+                  <Link2 className="size-3.5 shrink-0 text-brand-accent" aria-hidden="true" />
+                  <p className="min-w-0 flex-1 truncate text-xs font-medium text-neutral-900">
+                    {channel?.connected
+                      ? channel.channelTitle || "YouTube channel"
+                      : "YouTube channel"}
+                  </p>
                   {channel?.connected ? (
-                    <Badge variant="success">Connected</Badge>
+                    <Badge variant="success" className="shrink-0">Connected</Badge>
                   ) : (
-                    <Badge variant="secondary">Not connected</Badge>
+                    <Badge variant="secondary" className="shrink-0">Not connected</Badge>
                   )}
                 </div>
 
                 {channel?.connected ? (
-                  <div className="mt-3">
-                    <p className="truncate text-sm font-semibold text-neutral-950">
-                      {channel.channelTitle || "Untitled channel"}
-                    </p>
+                  <div className="mt-1.5 min-w-0 pl-5">
                     {channel.channelId ? (
-                      <p className="mt-0.5 font-mono text-[11px] text-neutral-500">
+                      <p className="break-all font-mono text-[11px] leading-5 text-neutral-500">
                         {channel.channelId}
                       </p>
                     ) : null}
                     {channel.googleAccountEmail ? (
-                      <p className="mt-1 truncate text-[11px] text-neutral-400">
+                      <p className="truncate text-[11px] text-neutral-400">
                         {channel.googleAccountEmail}
                       </p>
                     ) : null}
                   </div>
                 ) : (
-                  <p className="mt-2 text-xs leading-5 text-neutral-500">
-                    This creator has not linked a YouTube channel yet. Publishing
-                    will wait until a connection is added.
+                  <p className="mt-1.5 pl-5 text-xs leading-5 text-neutral-500">
+                    No channel linked yet — publishing waits until one is added.
                   </p>
                 )}
               </div>
 
               {video.status === "APPROVED" ? (
-                <p className="rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-3 text-[11px] leading-5 text-neutral-500">
-                  Approved — direct publish to YouTube lands here next (OAuth +
-                  publish worker).
+                <p className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-2.5 text-[11px] leading-5 text-neutral-500">
+                  Approved — direct publish to YouTube lands here next.
                 </p>
               ) : null}
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="min-w-0">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="size-4 text-brand-accent" aria-hidden="true" />
+                <ShieldCheck className="size-4 shrink-0 text-brand-accent" aria-hidden="true" />
                 Transfer state
               </CardTitle>
             </CardHeader>
@@ -380,8 +387,8 @@ function MetaStat({
   value: string;
 }) {
   return (
-    <Card size="sm">
-      <CardContent className="p-3">
+    <Card size="sm" className="min-w-0">
+      <CardContent className="min-w-0 p-3">
         <span className="flex items-center gap-1.5 text-[11px] text-neutral-500">
           {icon}
           {label}

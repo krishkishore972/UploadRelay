@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import axios from "axios";
+import { CheckCircle2, Loader2, UploadCloud } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createVideoChunks } from "@/lib/upload/create-video-chunks";
 import type { UploadedPart, UploadStatus } from "@/lib/upload/types";
 import { FilePicker } from "./file-picker";
-import { UploadSummary } from "./upload-summary";
 import { goApi } from "@/lib/go-api";
 
 const statusLabels: Record<UploadStatus, string> = {
@@ -37,6 +37,11 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
     { id: string; name: string | null; email: string }[]
   >([]);
   const [creatorId, setCreatorId] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    file?: string;
+    creator?: string;
+  }>({});
 
   useEffect(() => {
     goApi
@@ -52,18 +57,13 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!title.trim()) {
-      alert("Please enter the title");
-      return;
-    }
+    const nextErrors: typeof fieldErrors = {};
+    if (!title.trim()) nextErrors.title = "Please enter a title.";
+    if (!videoFile) nextErrors.file = "Please choose a video file.";
+    if (!creatorId) nextErrors.creator = "Please select a creator.";
+    setFieldErrors(nextErrors);
 
-    if (!videoFile) {
-      alert("Please select a video");
-      return;
-    }
-
-    if (!creatorId) {
-      alert("Please select a creator");
+    if (Object.keys(nextErrors).length > 0 || !videoFile) {
       return;
     }
 
@@ -78,16 +78,13 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
 
       const chunks = createVideoChunks(videoFile);
 
-      const createUploadResponse = await goApi.post(
-        "/uploads/create",
-        {
-          fileName: videoFile.name,
-          fileType: videoFile.type,
-          fileSize: videoFile.size,
-          title: title,
-          creatorId: creatorId,
-        },
-      );
+      const createUploadResponse = await goApi.post("/uploads/create", {
+        fileName: videoFile.name,
+        fileType: videoFile.type,
+        fileSize: videoFile.size,
+        title: title,
+        creatorId: creatorId,
+      });
 
       const createUploadData = createUploadResponse.data;
       uploadKey = createUploadData.key;
@@ -100,15 +97,12 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
       setUploadStatus("uploading");
 
       for (const chunk of chunks) {
-        const signedPartResponse = await goApi.post(
-          "/uploads/sign-part",
-          {
-            videoId: createUploadData.videoId,
-            key: createUploadData.key,
-            uploadId: createUploadData.uploadId,
-            partNumber: chunk.partNumber,
-          },
-        );
+        const signedPartResponse = await goApi.post("/uploads/sign-part", {
+          videoId: createUploadData.videoId,
+          key: createUploadData.key,
+          uploadId: createUploadData.uploadId,
+          partNumber: chunk.partNumber,
+        });
 
         const signedPartData = signedPartResponse.data;
 
@@ -137,15 +131,12 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
 
       setUploadStatus("completing");
 
-      const completeResponse = await goApi.post(
-        "/uploads/complete",
-        {
-          videoId: createUploadData.videoId,
-          key: createUploadData.key,
-          uploadId: createUploadData.uploadId,
-          parts: uploadedParts,
-        },
-      );
+      const completeResponse = await goApi.post("/uploads/complete", {
+        videoId: createUploadData.videoId,
+        key: createUploadData.key,
+        uploadId: createUploadData.uploadId,
+        parts: uploadedParts,
+      });
 
       console.log("completed upload:", completeResponse.data);
       setUploadProgress(100);
@@ -179,19 +170,19 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
 
   if (uploadStatus === "completed") {
     return (
-      <div className="flex flex-col items-center rounded-2xl border border-emerald-200 bg-emerald-50 px-6 py-12 text-center">
-        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl">
-          ✓
+      <div className="flex flex-col items-center rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-8 text-center sm:px-6 sm:py-10">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+          <CheckCircle2 className="h-6 w-6 text-emerald-700" aria-hidden="true" />
         </span>
-        <h3 className="mt-4 text-base font-semibold text-text-950">
+        <h3 className="mt-4 text-base font-semibold text-neutral-950">
           Upload complete
         </h3>
-        <p className="mt-1 max-w-xs text-sm leading-6 text-text-600">
+        <p className="mt-1 max-w-xs text-[13px] leading-6 text-neutral-500 sm:text-sm">
           Your master cut is now processing. You can track its status from the
           dashboard.
         </p>
         <Button
-          className="mt-5"
+          className="mt-5 w-full sm:w-auto"
           variant="brand"
           size="lg"
           type="button"
@@ -204,26 +195,60 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <Label className="block">
-        Video title
+    <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit} noValidate>
+      <div className="space-y-1.5">
+        <Label htmlFor="upload-title">Video title</Label>
         <Input
-          className="mt-2"
+          id="upload-title"
+          className="h-11 rounded-xl"
           type="text"
-          placeholder="Enter the title"
+          placeholder="e.g. Launch teaser — final cut"
           value={title}
-          onChange={(event) => setTitle(event.target.value)}
+          disabled={isUploading}
+          aria-invalid={Boolean(fieldErrors.title)}
+          onChange={(event) => {
+            setTitle(event.target.value);
+            if (fieldErrors.title) {
+              setFieldErrors((prev) => ({ ...prev, title: undefined }));
+            }
+          }}
         />
-      </Label>
+        {fieldErrors.title ? (
+          <p className="text-xs font-medium text-red-600">
+            {fieldErrors.title}
+          </p>
+        ) : null}
+      </div>
 
-      <FilePicker onFileSelect={setVideoFile} />
+      <div className="space-y-1.5">
+        <Label>Video file</Label>
+        <FilePicker
+          file={videoFile}
+          disabled={isUploading}
+          error={fieldErrors.file}
+          onFileSelect={(file) => {
+            setVideoFile(file);
+            if (file && fieldErrors.file) {
+              setFieldErrors((prev) => ({ ...prev, file: undefined }));
+            }
+          }}
+        />
+      </div>
 
-      <label className="block">
-        <span className="text-sm font-medium text-text-900">Creator</span>
+      <div className="space-y-1.5">
+        <Label htmlFor="upload-creator">Creator</Label>
         <select
+          id="upload-creator"
           value={creatorId}
-          onChange={(event) => setCreatorId(event.target.value)}
-          className="mt-2 h-11 w-full rounded-md border border-background-200 bg-background-50 px-3 text-sm text-text-950 outline-none transition focus:border-primary-700 focus:ring-2 focus:ring-primary-700/20"
+          disabled={isUploading}
+          aria-invalid={Boolean(fieldErrors.creator)}
+          onChange={(event) => {
+            setCreatorId(event.target.value);
+            if (fieldErrors.creator) {
+              setFieldErrors((prev) => ({ ...prev, creator: undefined }));
+            }
+          }}
+          className="h-11 w-full rounded-xl border border-neutral-300 bg-white px-3 text-sm text-neutral-950 outline-none transition placeholder:text-neutral-400 focus:border-neutral-950 focus:ring-2 focus:ring-neutral-950/10 disabled:cursor-not-allowed disabled:opacity-50 aria-[invalid=true]:border-red-300 aria-[invalid=true]:ring-red-100"
         >
           <option value="">Select creator…</option>
           {creators.map((c) => (
@@ -232,28 +257,39 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
             </option>
           ))}
         </select>
-        {creators.length === 0 ? (
-          <p className="mt-1 text-xs text-amber-700">
+        {fieldErrors.creator ? (
+          <p className="text-xs font-medium text-red-600">
+            {fieldErrors.creator}
+          </p>
+        ) : creators.length === 0 ? (
+          <p className="text-xs leading-5 text-amber-700">
             No linked creators — link one from the dashboard first.
           </p>
         ) : null}
-      </label>
-
-      {videoFile ? <UploadSummary file={videoFile} /> : null}
+      </div>
 
       {uploadStatus !== "idle" ? (
-        <div className="rounded-lg border border-background-200 bg-background-50/70 p-4">
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm font-medium text-text-950">
+        <div
+          className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-4"
+          aria-live="polite"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="min-w-0 truncate text-[13px] font-medium text-neutral-950 sm:text-sm">
               {statusLabels[uploadStatus]}
             </p>
-            <p className="text-sm font-semibold text-primary-700">
+            <p className="shrink-0 font-mono text-xs font-semibold text-neutral-950">
               {uploadProgress}%
             </p>
           </div>
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-background-200">
+          <div
+            className="mt-2.5 h-2 overflow-hidden rounded-full bg-neutral-200"
+            role="progressbar"
+            aria-valuenow={uploadProgress}
+            aria-valuemin={0}
+            aria-valuemax={100}
+          >
             <div
-              className="h-full rounded-full bg-primary-700 transition-all duration-300"
+              className="h-full rounded-full bg-neutral-950 transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
             />
           </div>
@@ -262,19 +298,43 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
 
       {errorMessage ? (
         <Alert variant="destructive">
-          <AlertDescription className="text-red-800">{errorMessage}</AlertDescription>
+          <AlertDescription className="text-red-800">
+            {errorMessage}
+          </AlertDescription>
         </Alert>
       ) : null}
 
-      <Button
-        variant="brand"
-        size="lg"
-        className="w-full"
-        disabled={isUploading}
-        type="submit"
-      >
-        {isUploading ? statusLabels[uploadStatus] : "Upload"}
-      </Button>
+      <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+        <Button
+          variant="brandOutline"
+          size="lg"
+          type="button"
+          disabled={isUploading}
+          onClick={onClose}
+          className="w-full sm:w-auto"
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="brand"
+          size="lg"
+          className="w-full sm:w-auto"
+          disabled={isUploading}
+          type="submit"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              {statusLabels[uploadStatus]}…
+            </>
+          ) : (
+            <>
+              <UploadCloud className="h-4 w-4" aria-hidden="true" />
+              Upload video
+            </>
+          )}
+        </Button>
+      </div>
     </form>
   );
 }

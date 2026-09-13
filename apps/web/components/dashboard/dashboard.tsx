@@ -3,7 +3,7 @@
 import { Clock3, Film, Send } from "lucide-react";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useUploadDialog } from "@/components/upload/upload-dialog-context";
 import {
@@ -93,9 +93,12 @@ export function DashboardOverview() {
             </p>
           </div>
           {isCreator ? (
-            <Button variant="brand" size="lg" render={<Link href="/dashboard/review" />}>
+            <Link
+              href="/dashboard/review"
+              className={buttonVariants({ variant: "brand", size: "lg" })}
+            >
               Open review queue
-            </Button>
+            </Link>
           ) : null}
         </div>
       </section>

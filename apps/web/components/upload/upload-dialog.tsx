@@ -23,18 +23,20 @@ export function UploadDialog({ open, onClose, onUploaded }: UploadDialogProps) {
         if (!next) onClose();
       }}
     >
-      <DialogContent className="max-h-[calc(100svh-4rem)] overflow-y-auto p-0 sm:max-w-lg">
-        <DialogHeader className="border-b border-neutral-100 px-5 py-4 sm:px-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-accent">
+      <DialogContent className="flex max-h-[90dvh] w-[calc(100%-2rem)] flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-lg">
+        <DialogHeader className="shrink-0 border-b border-neutral-100 px-4 pb-4 pt-5 sm:px-6">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-neutral-500">
             UploadRelay
           </p>
-          <DialogTitle>Upload a final video</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="mt-1 text-lg sm:text-xl">
+            Upload a final video
+          </DialogTitle>
+          <DialogDescription className="mt-1 text-[13px] sm:text-sm">
             The original is sent to S3 in multipart chunks and staged for
             preview and approval.
           </DialogDescription>
         </DialogHeader>
-        <div className="px-5 py-5 sm:px-6">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           <UploadForm onUploaded={onUploaded} onClose={onClose} />
         </div>
       </DialogContent>

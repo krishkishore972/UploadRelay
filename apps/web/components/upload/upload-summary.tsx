@@ -1,40 +1,25 @@
+import { formatBytes } from "@/lib/upload/format-bytes";
+
 type UploadSummaryProps = {
   file: File;
 };
 
 export function UploadSummary({ file }: UploadSummaryProps) {
   return (
-<div className="rounded-2xl border border-background-200 bg-background-50 p-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-text-950">
+    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3 sm:p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-neutral-950">
             {file.name}
           </p>
-          <p className="mt-1 text-sm text-text-600">
+          <p className="mt-0.5 truncate text-xs text-neutral-500">
             {file.type || "Unknown video type"}
           </p>
         </div>
-        <div className="shrink-0 rounded-lg bg-primary-700/10 px-3 py-1.5 font-mono text-[11px] font-medium text-primary-700">
+        <div className="shrink-0 rounded-lg bg-neutral-950/[0.06] px-2.5 py-1.5 font-mono text-[11px] font-medium text-neutral-950">
           {formatBytes(file.size)}
         </div>
       </div>
     </div>
   );
-}
-
-function formatBytes(bytes: number) {
-  const units = ["B", "KB", "MB", "GB", "TB"];
-
-  if (bytes === 0) {
-    return "0 B";
-  }
-
-  const index = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
-  );
-
-  const value = bytes / 1024 ** index;
-
-  return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
 }

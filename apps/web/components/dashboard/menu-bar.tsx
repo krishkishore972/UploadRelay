@@ -45,7 +45,10 @@ export function MenuBar({
     user.role === "CREATOR" ? "Creator Portal" : "Studio Portal";
 
   return (
-    <header className="sticky top-4 z-40 w-full" data-purpose="main-header">
+    <header
+      className="w-full shrink-0 bg-[#fafafa] pb-1"
+      data-purpose="main-header"
+    >
       <nav
         aria-label="Global Navigation"
         className={`${ds.nav} mx-auto flex w-full max-w-[1600px] items-center justify-between px-3 py-2 sm:px-4`}
