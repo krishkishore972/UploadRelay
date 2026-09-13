@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useState } from "react";
 import axios from "axios";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { createVideoChunks } from "@/lib/upload/create-video-chunks";
 import type { UploadedPart, UploadStatus } from "@/lib/upload/types";
 import { FilePicker } from "./file-picker";
@@ -188,7 +191,9 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
           dashboard.
         </p>
         <Button
-          className="mt-5 h-10 bg-primary-700 font-semibold text-text-50 hover:bg-primary-800"
+          className="mt-5"
+          variant="brand"
+          size="lg"
           type="button"
           onClick={onClose}
         >
@@ -200,16 +205,16 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
 
   return (
     <form className="space-y-5" onSubmit={handleSubmit}>
-      <label className="block">
-        <span className="text-sm font-medium text-text-900">Video title</span>
-        <input
-          className="mt-2 h-11 w-full rounded-md border border-background-200 bg-background-50 px-3 text-sm text-text-950 outline-none transition placeholder:text-text-700 focus:border-primary-700 focus:ring-2 focus:ring-primary-700/20"
+      <Label className="block">
+        Video title
+        <Input
+          className="mt-2"
           type="text"
           placeholder="Enter the title"
           value={title}
           onChange={(event) => setTitle(event.target.value)}
         />
-      </label>
+      </Label>
 
       <FilePicker onFileSelect={setVideoFile} />
 
@@ -256,13 +261,15 @@ export function UploadForm({ onUploaded, onClose }: UploadFormProps) {
       ) : null}
 
       {errorMessage ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-          {errorMessage}
-        </p>
+        <Alert variant="destructive">
+          <AlertDescription className="text-red-800">{errorMessage}</AlertDescription>
+        </Alert>
       ) : null}
 
       <Button
-        className="h-11 w-full bg-primary-700 font-semibold text-text-50 hover:bg-primary-800"
+        variant="brand"
+        size="lg"
+        className="w-full"
         disabled={isUploading}
         type="submit"
       >

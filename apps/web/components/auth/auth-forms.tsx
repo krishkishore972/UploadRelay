@@ -4,6 +4,18 @@ import { Suspense, useState } from "react";
 import type { FormEvent } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ds } from "@/lib/design-system";
 
 function LoginFormInner({ onSwitch }: { onSwitch: () => void }) {
@@ -39,55 +51,65 @@ function LoginFormInner({ onSwitch }: { onSwitch: () => void }) {
   }
 
   return (
-    <section className="w-full max-w-md rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-sm sm:p-8">
-      <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-        Welcome back
-      </h1>
-      <p className="mt-1 text-sm text-neutral-600">
-        Sign in to continue to your UploadRelay workspace.
-      </p>
-      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-        <label className="block text-sm font-medium text-neutral-900">
-          Email
-          <input
-            name="email"
-            type="email"
-            required
-            placeholder="you@studio.com"
-            className={`${ds.input} mt-2`}
-          />
-        </label>
-        <label className="block text-sm font-medium text-neutral-900">
-          Password
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={6}
-            placeholder="••••••••"
-            className={`${ds.input} mt-2`}
-          />
-        </label>
-        {error ? <p className="text-sm font-medium text-red-700">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`${ds.primaryButton} w-full disabled:opacity-60`}
-        >
-          {isSubmitting ? "Signing in..." : "Sign in"}
-        </button>
-      </form>
-      <p className="mt-5 text-sm text-neutral-600">
-        Need an account?{" "}
-        <button
-          type="button"
-          onClick={onSwitch}
-          className="font-semibold text-neutral-900 underline-offset-2 hover:underline"
-        >
-          Sign up
-        </button>
-      </p>
-    </section>
+    <Card className="w-full max-w-md rounded-3xl p-1 sm:p-2">
+      <CardHeader className="px-6 pt-6 sm:px-8 sm:pt-8">
+        <CardTitle className="text-3xl font-bold tracking-tight">
+          Welcome back
+        </CardTitle>
+        <CardDescription className="text-sm">
+          Sign in to continue to your UploadRelay workspace.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-6 pb-6 sm:px-8 sm:pb-8">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <Label className="block">
+            Email
+            <Input
+              name="email"
+              type="email"
+              required
+              placeholder="you@studio.com"
+              className="mt-2"
+            />
+          </Label>
+          <Label className="block">
+            Password
+            <Input
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              placeholder="••••••••"
+              className="mt-2"
+            />
+          </Label>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <Button
+            type="submit"
+            variant="brand"
+            size="lg"
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Signing in..." : "Sign in"}
+          </Button>
+        </form>
+        <p className="mt-5 text-sm text-neutral-600">
+          Need an account?{" "}
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="font-semibold text-neutral-900 underline-offset-2 hover:underline"
+          >
+            Sign up
+          </button>
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -148,72 +170,86 @@ export function SignupForm({ onSwitch }: { onSwitch: () => void }) {
   }
 
   return (
-    <section className="w-full max-w-md rounded-3xl border border-neutral-200/80 bg-white p-6 shadow-sm sm:p-8">
-      <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
-        Create your account
-      </h1>
-      <p className="mt-1 text-sm text-neutral-600">
-        Join UploadRelay and start handing off master cuts.
-      </p>
-      <form className="mt-8 space-y-4" onSubmit={handleSubmit}>
-        <label className="block text-sm font-medium text-neutral-900">
-          Name
-          <input
-            name="name"
-            type="text"
-            required
-            minLength={2}
-            placeholder="Alex Rivera"
-            className={`${ds.input} mt-2`}
-          />
-        </label>
-        <label className="block text-sm font-medium text-neutral-900">
-          Email
-          <input
-            name="email"
-            type="email"
-            required
-            placeholder="you@studio.com"
-            className={`${ds.input} mt-2`}
-          />
-        </label>
-        <label className="block text-sm font-medium text-neutral-900">
-          Password
-          <input
-            name="password"
-            type="password"
-            required
-            minLength={6}
-            placeholder="••••••••"
-            className={`${ds.input} mt-2`}
-          />
-        </label>
-        <label className="block text-sm font-medium text-neutral-900">
-          Role
-          <select name="role" defaultValue="CREATOR" className={`${ds.input} mt-2`}>
-            <option value="CREATOR">Creator</option>
-            <option value="EDITOR">Editor</option>
-          </select>
-        </label>
-        {error ? <p className="text-sm font-medium text-red-700">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className={`${ds.primaryButton} w-full disabled:opacity-60`}
-        >
-          {isSubmitting ? "Creating account..." : "Create account"}
-        </button>
-      </form>
-      <p className="mt-5 text-sm text-neutral-600">
-        Already have an account?{" "}
-        <button
-          type="button"
-          onClick={onSwitch}
-          className="font-semibold text-neutral-900 underline-offset-2 hover:underline"
-        >
-          Sign in
-        </button>
-      </p>
-    </section>
+    <Card className="w-full max-w-md rounded-3xl p-1 sm:p-2">
+      <CardHeader className="px-6 pt-6 sm:px-8 sm:pt-8">
+        <CardTitle className="text-3xl font-bold tracking-tight">
+          Create your account
+        </CardTitle>
+        <CardDescription className="text-sm">
+          Join UploadRelay and start handing off master cuts.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="px-6 pb-6 sm:px-8 sm:pb-8">
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <Label className="block">
+            Name
+            <Input
+              name="name"
+              type="text"
+              required
+              minLength={2}
+              placeholder="Alex Rivera"
+              className="mt-2"
+            />
+          </Label>
+          <Label className="block">
+            Email
+            <Input
+              name="email"
+              type="email"
+              required
+              placeholder="you@studio.com"
+              className="mt-2"
+            />
+          </Label>
+          <Label className="block">
+            Password
+            <Input
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              placeholder="••••••••"
+              className="mt-2"
+            />
+          </Label>
+          <Label className="block">
+            Role
+            <select
+              name="role"
+              defaultValue="CREATOR"
+              className={`${ds.input} mt-2`}
+            >
+              <option value="CREATOR">Creator</option>
+              <option value="EDITOR">Editor</option>
+            </select>
+          </Label>
+          {error ? (
+            <Alert variant="destructive">
+              <AlertDescription className="text-red-800">{error}</AlertDescription>
+            </Alert>
+          ) : null}
+          <Button
+            type="submit"
+            variant="brand"
+            size="lg"
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Creating account..." : "Create account"}
+          </Button>
+        </form>
+        <p className="mt-5 text-sm text-neutral-600">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={onSwitch}
+            className="font-semibold text-neutral-900 underline-offset-2 hover:underline"
+          >
+            Sign in
+          </button>
+        </p>
+      </CardContent>
+    </Card>
   );
 }

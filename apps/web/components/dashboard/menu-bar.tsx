@@ -1,8 +1,30 @@
 "use client";
 
-import Link from "next/link";
+import { Menu } from "lucide-react";
+import { signOut } from "next-auth/react";
 
+import { ds } from "@/lib/design-system";
 import { initials } from "@/lib/dashboard/format";
+import { BrandMark } from "@/components/brand/mark";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { SidebarNav } from "./sidebar-nav";
 
 export type MenuBarUser = {
   name?: string | null;
@@ -10,51 +32,89 @@ export type MenuBarUser = {
   role?: string | null;
 };
 
-export function MenuBar({ user }: { user: MenuBarUser }) {
+export function MenuBar({
+  user,
+  mobileOpen,
+  onMobileOpenChange,
+}: {
+  user: MenuBarUser;
+  mobileOpen: boolean;
+  onMobileOpenChange: (open: boolean) => void;
+}) {
   const roleLabel =
     user.role === "CREATOR" ? "Creator Portal" : "Studio Portal";
 
   return (
-    <header className="w-full" data-purpose="main-header">
+    <header className="sticky top-4 z-40 w-full" data-purpose="main-header">
       <nav
         aria-label="Global Navigation"
-        className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200/80 bg-white px-6 py-3 shadow-[0_2px_12px_-2px_rgba(0,0,0,0.04)] md:rounded-full"
+        className={`${ds.nav} mx-auto flex w-full max-w-[1600px] items-center justify-between px-3 py-2 sm:px-4`}
       >
-        <div className="flex items-center gap-8">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2.5 rounded-lg p-0.5 focus:outline-none focus:ring-2 focus:ring-neutral-900"
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="rounded-full text-white hover:bg-white/10 hover:text-white lg:hidden"
+            aria-label="Open navigation"
+            onClick={() => onMobileOpenChange(true)}
           >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#0a0a0c] text-sm font-extrabold text-white shadow-sm">
-              R
-            </span>
-            <span className="text-lg font-bold tracking-tight text-neutral-950">
-              UploadRelay
-            </span>
-          </Link>
-          <div className="hidden items-center gap-6 text-xs font-medium text-neutral-600 lg:flex">
-            {/* Placeholder: Pipelines / Activity / API status arrive with publishing + audit logs (post-MVP). */}
-            <span className="flex items-center gap-1.5 font-mono text-[11px]">
-              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
-              <span>API Operational</span>
-            </span>
-          </div>
+            <Menu className="size-4" />
+          </Button>
+          <BrandMark href="/dashboard" variant="dark" size="sm" />
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="hidden border border-neutral-200/60 bg-neutral-100 px-3.5 py-1.5 font-mono text-xs font-medium text-neutral-600 sm:inline-block rounded-full">
-            {roleLabel}
-          </span>
-          <div
-            className="group flex cursor-pointer items-center gap-2"
-            title={user.email ?? "Account settings"}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Badge
+            variant="outline"
+            className="hidden border-white/15 bg-white/10 text-neutral-200 sm:inline-flex"
           >
-            <div className="smooth-transition flex h-9 w-9 items-center justify-center rounded-full border border-neutral-800 bg-neutral-950 text-xs font-bold text-white group-hover:bg-neutral-800">
-              {initials(user.name ?? null, user.email ?? "U")}
-            </div>
-          </div>
+            {roleLabel}
+          </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              className="rounded-full border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-white/40"
+              aria-label="Account menu"
+            >
+              <Avatar>
+                <AvatarFallback>
+                  {initials(user.name ?? null, user.email ?? "U")}
+                </AvatarFallback>
+              </Avatar>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-52">
+              <DropdownMenuLabel>
+                <p className="truncate text-sm font-semibold text-neutral-950">
+                  {user.name || "Account"}
+                </p>
+                <p className="truncate font-mono text-[11px] font-normal text-neutral-500">
+                  {user.email}
+                </p>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                variant="destructive"
+                onClick={() => signOut({ callbackUrl: "/" })}
+              >
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
+
+      <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
+        <SheetContent side="left" className="bg-white p-5">
+          <SheetHeader className="p-0">
+            <SheetTitle className="text-left">
+              <BrandMark size="sm" />
+            </SheetTitle>
+            <SheetDescription>{roleLabel}</SheetDescription>
+          </SheetHeader>
+          <div className="mt-4 flex min-h-0 flex-1 flex-col">
+            <SidebarNav user={user} onNavigate={() => onMobileOpenChange(false)} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 }

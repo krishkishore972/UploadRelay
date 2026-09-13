@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   Clock3,
   Globe2,
-  Play,
   Share2,
   ShieldCheck,
   Sparkles,
@@ -15,6 +14,7 @@ import {
 const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 import { ds } from "@/lib/design-system";
+import { BrandMark } from "@/components/brand/mark";
 import { FadeUp, Stagger, StaggerItem } from "@/components/motion/primitives";
 
 const partners = [
@@ -171,19 +171,7 @@ function FloatingNav() {
       className="sticky top-5 z-50 flex w-full justify-center px-4"
     >
       <nav className={`${ds.nav} flex w-full max-w-4xl items-center justify-between px-4 py-2`}>
-        <Link
-          href="/"
-          aria-label="UploadRelay Home"
-          className="group flex items-center gap-2.5 pl-1"
-        >
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-sm font-extrabold text-black shadow-sm transition-transform group-hover:scale-105">
-            <Play className="size-4 fill-current" aria-hidden="true" />
-          </span>
-          <span className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-white">
-            UploadRelay
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-accent" />
-          </span>
-        </Link>
+        <BrandMark href="/" variant="dark" size="sm" className="pl-1" />
 
         <div className="hidden items-center gap-7 text-xs font-medium text-neutral-300 md:flex">
           <a className="transition-colors hover:text-white" href="#pipeline">
