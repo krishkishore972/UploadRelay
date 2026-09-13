@@ -84,7 +84,7 @@ export function VideoLibrary({
         </div>
       ) : videos.length === 0 ? (
         <Card className="border-dashed">
-          <CardHeader className="items-center px-6 pb-0 pt-16 text-center">
+          <CardHeader className="items-center px-6 pb-16 pt-16 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100">
               <Film className="h-5 w-5 text-neutral-600" aria-hidden="true" />
             </div>
@@ -93,14 +93,6 @@ export function VideoLibrary({
               {emptyDescription}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex justify-center pb-16">
-            {showUpload ? (
-              <Button variant="brand" size="lg" onClick={openUpload}>
-                <UploadCloud className="h-4 w-4" aria-hidden="true" />
-                Upload your first video
-              </Button>
-            ) : null}
-          </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

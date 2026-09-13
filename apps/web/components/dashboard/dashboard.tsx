@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock3, Film, Send, UploadCloud } from "lucide-react";
+import { Clock3, Film, Send } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ type Metric = {
 
 export function DashboardOverview() {
   const { videos, isCreator, isLoading, loadVideos } = useDashboardVideos();
-  const { openUpload, uploadVersion } = useUploadDialog();
+  const { uploadVersion } = useUploadDialog();
   useLoadVideosOnMount(loadVideos, uploadVersion);
 
   const pendingReview = videos.filter(
@@ -96,12 +96,7 @@ export function DashboardOverview() {
             <Button variant="brand" size="lg" render={<Link href="/dashboard/review" />}>
               Open review queue
             </Button>
-          ) : (
-            <Button variant="brand" size="lg" onClick={openUpload}>
-              <UploadCloud className="h-4 w-4" aria-hidden="true" />
-              Upload a master cut
-            </Button>
-          )}
+          ) : null}
         </div>
       </section>
 

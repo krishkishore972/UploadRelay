@@ -9,14 +9,12 @@ import {
   LayoutGrid,
   Link2,
   LogOut,
-  UploadCloud,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useUploadDialog } from "@/components/upload/upload-dialog-context";
 import { initials } from "@/lib/dashboard/format";
 import type { MenuBarUser } from "./menu-bar";
 
@@ -27,7 +25,6 @@ type SidebarNavProps = {
 
 export function SidebarNav({ user, onNavigate }: SidebarNavProps) {
   const pathname = usePathname();
-  const { openUpload } = useUploadDialog();
   const isCreator = user.role === "CREATOR";
 
   const items = isCreator
@@ -70,19 +67,6 @@ export function SidebarNav({ user, onNavigate }: SidebarNavProps) {
             {item.label}
           </Link>
         ))}
-        {isCreator ? null : (
-          <button
-            type="button"
-            onClick={() => {
-              openUpload();
-              onNavigate?.();
-            }}
-            className={itemClass(false)}
-          >
-            <UploadCloud className="h-4 w-4" aria-hidden="true" />
-            New upload
-          </button>
-        )}
       </nav>
 
       <div className="mt-auto pt-5">
