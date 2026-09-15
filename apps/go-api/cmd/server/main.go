@@ -42,6 +42,11 @@ func main() {
 		log.Fatalf("failed to create link handler: %v", err)
 	}
 
+	youtubeHandler, err := handlers.NewYouTubeHandler(cfg, db)
+	if err != nil {
+		log.Fatalf("failed to create youtube handler: %v", err)
+	}
+
 	// multipart
 	mux.Handle(
 		"POST /uploads/create",
@@ -99,6 +104,27 @@ func main() {
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(linkHandler.GetLinks)),
 	)
 
+	//oauth2
+	mux.Handle(
+		"GET /youtube/oauth/start",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(youtubeHandler.StartOAuth)),
+	)
+	
+	mux.HandleFunc(
+		"GET /youtube/oauth/callback",
+		youtubeHandler.OAuthCallback,
+	)
+	
+	mux.Handle(
+		"GET /youtube/connection",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(youtubeHandler.GetConnection)),
+	)
+	
+	mux.Handle(
+		"DELETE /youtube/connection",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(youtubeHandler.Disconnect)),
+	)
+
 	server := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      withCORS(mux),
@@ -128,7 +154,7 @@ func withCORS(next http.Handler) http.Handler {
 			w.Header().Set("Vary", "Origin")
 		}
 
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 
 		if r.Method == http.MethodOptions {

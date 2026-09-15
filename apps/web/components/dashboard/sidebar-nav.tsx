@@ -9,6 +9,7 @@ import {
   LayoutGrid,
   Link2,
   LogOut,
+  Youtube,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -28,17 +29,18 @@ export function SidebarNav({ user, onNavigate }: SidebarNavProps) {
   const isCreator = user.role === "CREATOR";
 
   const items = isCreator
-    ? [
-        { href: "/dashboard", label: "Overview", icon: LayoutGrid, exact: true },
-        { href: "/dashboard/review", label: "Review queue", icon: Clapperboard },
-        { href: "/dashboard/videos", label: "Videos", icon: Film },
-        { href: "/dashboard/links", label: "Invite editor", icon: Link2 },
-      ]
-    : [
-        { href: "/dashboard", label: "Overview", icon: LayoutGrid, exact: true },
-        { href: "/dashboard/videos", label: "Videos", icon: Film },
-        { href: "/dashboard/links", label: "Link creator", icon: Link2 },
-      ];
+  ? [
+      { href: "/dashboard", label: "Overview", icon: LayoutGrid, exact: true },
+      { href: "/dashboard/review", label: "Review queue", icon: Clapperboard },
+      { href: "/dashboard/videos", label: "Videos", icon: Film },
+      { href: "/dashboard/youtube", label: "YouTube", icon: Youtube },
+      { href: "/dashboard/links", label: "Invite editor", icon: Link2 },
+    ]
+  : [
+      { href: "/dashboard", label: "Overview", icon: LayoutGrid, exact: true },
+      { href: "/dashboard/videos", label: "Videos", icon: Film },
+      { href: "/dashboard/links", label: "Link creator", icon: Link2 },
+    ];
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return pathname === href;

@@ -64,3 +64,15 @@ export type LinkCreatorResponse = {
   createdAt: string;
   alreadyLinked: boolean;
 };
+
+export type YouTubeConnection = {
+  connected: boolean;
+  channelId: string | null;
+  channelTitle: string | null;
+  googleAccountEmail: string | null;
+  tokenExpiry: string | null;
+};
+
+export type StartYouTubeOAuthResponse = {
+  url: string;
+};
