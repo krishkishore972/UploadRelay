@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ExternalLink, Loader2, Youtube } from "lucide-react";
+import { ExternalLink, Loader2,} from "lucide-react";
+import { FaYoutube } from "react-icons/fa";
 import { toast } from "sonner";
 
 import { goApi } from "@/lib/go-api";
@@ -99,7 +100,7 @@ export function YouTubeConnectionPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Youtube className="h-5 w-5 text-red-600" aria-hidden="true" />
+            <FaYoutube className="h-5 w-5 text-red-600" aria-hidden="true" />
             Channel access
           </CardTitle>
           <CardDescription>

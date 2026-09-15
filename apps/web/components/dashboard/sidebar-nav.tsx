@@ -9,9 +9,8 @@ import {
   LayoutGrid,
   Link2,
   LogOut,
-  Youtube,
 } from "lucide-react";
-
+import { FaYoutube } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -33,7 +32,7 @@ export function SidebarNav({ user, onNavigate }: SidebarNavProps) {
       { href: "/dashboard", label: "Overview", icon: LayoutGrid, exact: true },
       { href: "/dashboard/review", label: "Review queue", icon: Clapperboard },
       { href: "/dashboard/videos", label: "Videos", icon: Film },
-      { href: "/dashboard/youtube", label: "YouTube", icon: Youtube },
+      { href: "/dashboard/youtube", label: "YouTube", icon: FaYoutube },
       { href: "/dashboard/links", label: "Invite editor", icon: Link2 },
     ]
   : [
