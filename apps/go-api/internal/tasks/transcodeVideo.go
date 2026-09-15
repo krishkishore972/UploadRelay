@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	tokencrypto "go-api/internal/crypto"
 	"io"
 	"log"
 	"os"
@@ -16,12 +17,15 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/google/uuid"
+	"golang.org/x/oauth2"
 )
 
 type Processor struct {
-	S3     *s3.Client
-	Bucket string
-	DB     *sql.DB
+	S3           *s3.Client
+	Bucket       string
+	DB           *sql.DB
+	YouTubeOAuth *oauth2.Config
+	TokenCipher  *tokencrypto.TokenCipher
 }
 
 /*

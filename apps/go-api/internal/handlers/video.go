@@ -12,7 +12,6 @@ type VideoHandler struct {
 	db *sql.DB
 }
 
-
 //GET /videos/editor
 func NewVideHandler(db *sql.DB) (*VideoHandler, error) {
 	if db == nil {
@@ -49,7 +48,7 @@ func (h *VideoHandler) GetEditorVideos(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	rows,err := h.db.QueryContext(r.Context(),
+	rows, err := h.db.QueryContext(r.Context(),
 		`
 	SELECT
 		"id",
@@ -220,21 +219,31 @@ type CreatorResponse struct {
 	Channel *ChannelResponse `json:"channel"`
 }
 
-type VideoDetailResponse struct {
-	ID                string          `json:"id"`
-	Title             *string         `json:"title"`
-	OriginalFileName  string          `json:"originalFileName"`
-	OriginalS3Key     string          `json:"originalS3Key"`
-	OriginalMimeType  *string         `json:"originalMimeType"`
-	OriginalSize      *int64          `json:"originalSize"`
-	PreviewPrefix     *string         `json:"previewPrefix"`
-	MasterPlaylistKey *string         `json:"masterPlaylistKey"`
-	Status            string          `json:"status"`
-	CreatedAt         time.Time       `json:"createdAt"`
-	UpdatedAt         time.Time       `json:"updatedAt"`
-	Creator           CreatorResponse `json:"creator"`
+type PublishJobResponse struct {
+	ID             string    `json:"id"`
+	Status         string    `json:"status"`
+	YouTubeVideoID *string   `json:"youtubeVideoId"`
+	YouTubeURL     *string   `json:"youtubeUrl"`
+	ErrorMessage   *string   `json:"errorMessage"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
+type VideoDetailResponse struct {
+	ID                string              `json:"id"`
+	Title             *string             `json:"title"`
+	OriginalFileName  string              `json:"originalFileName"`
+	OriginalS3Key     string              `json:"originalS3Key"`
+	OriginalMimeType  *string             `json:"originalMimeType"`
+	OriginalSize      *int64              `json:"originalSize"`
+	PreviewPrefix     *string             `json:"previewPrefix"`
+	MasterPlaylistKey *string             `json:"masterPlaylistKey"`
+	Status            string              `json:"status"`
+	PublishJob        *PublishJobResponse `json:"publishJob"`
+	CreatedAt         time.Time           `json:"createdAt"`
+	UpdatedAt         time.Time           `json:"updatedAt"`
+	Creator           CreatorResponse     `json:"creator"`
+}
 
 func (h *VideoHandler) GetVideoDetail(w http.ResponseWriter, r *http.Request) {
 	userID, ok := middleware.UserIDFromContext(r.Context())
@@ -332,6 +341,47 @@ func (h *VideoHandler) GetVideoDetail(w http.ResponseWriter, r *http.Request) {
 		ChannelTitle:       optionalString(channelTitle),
 		GoogleAccountEmail: optionalString(googleAccountEmail),
 		Connected:          channelConnected,
+	}
+
+	var publishJob PublishJobResponse
+	var youtubeVideoID, youtubeURL, errorMessage sql.NullString
+
+	err = h.db.QueryRowContext(r.Context(),
+		`
+	SELECT
+		"id",
+		"status",
+		"youtubeVideoId",
+		"youtubeUrl",
+		"errorMessage",
+		"createdAt",
+		"updatedAt"
+	FROM "PublishJob"
+	WHERE "videoId" = $1
+	ORDER BY "createdAt" DESC
+	LIMIT 1
+	`,
+		videoID,
+	).Scan(
+		&publishJob.ID,
+		&publishJob.Status,
+		&youtubeVideoID,
+		&youtubeURL,
+		&errorMessage,
+		&publishJob.CreatedAt,
+		&publishJob.UpdatedAt,
+	)
+
+	if err == nil {
+		publishJob.YouTubeVideoID = optionalString(youtubeVideoID)
+		publishJob.YouTubeURL = optionalString(youtubeURL)
+		publishJob.ErrorMessage = optionalString(errorMessage)
+		video.PublishJob = &publishJob
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "Failed to fetch publish job",
+		})
+		return
 	}
 
 	writeJSON(w, http.StatusOK, video)

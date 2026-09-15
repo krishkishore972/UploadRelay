@@ -78,6 +78,7 @@ export function VideoDetail({ videoId }: { videoId: string }) {
   const [errorMessage, setErrorMessage] = useState("");
   const [isCreator, setIsCreator] = useState(false);
   const [acting, setActing] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session").then(async (r) => {
@@ -108,6 +109,28 @@ export function VideoDetail({ videoId }: { videoId: string }) {
     }
   }
 
+  async function publishVideo() {
+    if (!video) return;
+
+    setIsPublishing(true);
+    try {
+      await goApi.post(`/videos/${videoId}/publish`, {
+        title: video.title || video.originalFileName,
+        description: "",
+        privacy: "PRIVATE",
+      });
+
+      const response = await goApi.get<VideoDetailType>(`/videos/${videoId}`);
+      setVideo(response.data);
+      toast.success("Publishing started.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Failed to start publishing.");
+    } finally {
+      setIsPublishing(false);
+    }
+  }
+
   useEffect(() => {
     async function loadVideo() {
       try {
@@ -124,6 +147,23 @@ export function VideoDetail({ videoId }: { videoId: string }) {
 
     loadVideo();
   }, [videoId]);
+
+  useEffect(() => {
+    if (video?.status !== "PUBLISHING") {
+      return;
+    }
+
+    const interval = window.setInterval(async () => {
+      try {
+        const response = await goApi.get<VideoDetailType>(`/videos/${videoId}`);
+        setVideo(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    }, 8000);
+
+    return () => window.clearInterval(interval);
+  }, [video?.status, videoId]);
 
   if (isLoading) {
     return (
@@ -341,10 +381,48 @@ export function VideoDetail({ videoId }: { videoId: string }) {
                 )}
               </div>
 
-              {video.status === "APPROVED" ? (
-                <p className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-2.5 text-[11px] leading-5 text-neutral-500">
-                  Approved — direct publish to YouTube lands here next.
-                </p>
+              {video.status === "APPROVED" && isCreator ? (
+                channel?.connected ? (
+                  <Button
+                    type="button"
+                    variant="brand"
+                    size="lg"
+                    className="w-full"
+                    disabled={isPublishing}
+                    onClick={publishVideo}
+                  >
+                    {isPublishing ? "Starting publish…" : "Publish to YouTube"}
+                  </Button>
+                ) : (
+                  <p className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 p-2.5 text-[11px] leading-5 text-neutral-500">
+                    Connect your YouTube channel before publishing.
+                  </p>
+                )
+              ) : null}
+
+              {video.publishJob ? (
+                <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-2.5 text-[11px] leading-5 text-neutral-600">
+                  <p className="font-semibold text-neutral-900">
+                    Publish job: {video.publishJob.status}
+                  </p>
+
+                  {video.publishJob.youtubeUrl ? (
+                    <a
+                      href={video.publishJob.youtubeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-1 block break-all text-blue-600 underline"
+                    >
+                      {video.publishJob.youtubeUrl}
+                    </a>
+                  ) : null}
+
+                  {video.publishJob.errorMessage ? (
+                    <p className="mt-1 text-red-600">
+                      {video.publishJob.errorMessage}
+                    </p>
+                  ) : null}
+                </div>
               ) : null}
             </CardContent>
           </Card>

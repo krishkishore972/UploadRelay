@@ -29,6 +29,17 @@ export type Creator = {
 
 export type VideoDetail = EditorVideo & {
   creator: Creator;
+  publishJob: PublishJob | null;
+};
+
+export type PublishJob = {
+  id: string;
+  status: string;
+  youtubeVideoId: string | null;
+  youtubeUrl: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type GetEditorVideosResponse = {

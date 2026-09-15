@@ -47,6 +47,11 @@ func main() {
 		log.Fatalf("failed to create youtube handler: %v", err)
 	}
 
+	publishHandler, err := handlers.NewPublishHandler(db, asynqClient)
+	if err != nil {
+		log.Fatalf("failed to create publish handler: %v", err)
+	}
+
 	// multipart
 	mux.Handle(
 		"POST /uploads/create",
@@ -109,20 +114,26 @@ func main() {
 		"GET /youtube/oauth/start",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(youtubeHandler.StartOAuth)),
 	)
-	
+
 	mux.HandleFunc(
 		"GET /youtube/oauth/callback",
 		youtubeHandler.OAuthCallback,
 	)
-	
+
 	mux.Handle(
 		"GET /youtube/connection",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(youtubeHandler.GetConnection)),
 	)
-	
+
 	mux.Handle(
 		"DELETE /youtube/connection",
 		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(youtubeHandler.Disconnect)),
+	)
+
+	//publish vide
+	mux.Handle(
+		"POST /videos/{id}/publish",
+		middleware.AuthMiddleware(cfg.GoJWTSecret, http.HandlerFunc(publishHandler.PublishVideo)),
 	)
 
 	server := &http.Server{

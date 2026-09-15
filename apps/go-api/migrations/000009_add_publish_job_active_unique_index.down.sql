@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS "PublishJob_one_active_per_video";
