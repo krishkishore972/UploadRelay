@@ -4,10 +4,15 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
+  const pathname = request.nextUrl.pathname;
 
-  if (!token && request.nextUrl.pathname.startsWith("/dashboard")) {
+  if (token && ["/", "/auth", "/login", "/signup"].includes(pathname)) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
+  if (!token && pathname.startsWith("/dashboard")) {
     const url = new URL("/auth", request.url);
-    url.searchParams.set("callbackUrl", request.nextUrl.pathname);
+    url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }
 
@@ -15,5 +20,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/", "/auth", "/login", "/signup", "/dashboard/:path*"],
 };
