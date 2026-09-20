@@ -11,7 +11,9 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -157,43 +159,101 @@ func createHLSPreview(ctx context.Context, inputPath, outputDir string) error {
 	return nil
 }
 
-/*
-These files are independent. Uploading segment_001.ts does not depend on uploading segment_000.ts. So you can upload several at the same time.
-But don’t start unlimited goroutines. Use a small concurrency limit, like 4.
-Conceptually:
-upload 4 files at once
-when one finishes, start another
-if any upload fails, return error
-*/
-
 func (p *Processor) uploadDirToS3(ctx context.Context, localDir, s3Prefix string) error {
-	return filepath.Walk(localDir, func(fp string, info os.FileInfo, err error) error {
+	type uploadJob struct {
+		filePath string
+		key      string
+	}
+
+	const uploadWorkers = 4
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	jobs := make(chan uploadJob)
+	errCh := make(chan error, 1)
+
+	var wg sync.WaitGroup
+
+	for i := 0; i < uploadWorkers; i++ {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			for job := range jobs {
+				if err := p.uploadFileWithRetry(ctx, job.filePath, job.key); err != nil {
+					select {
+					case errCh <- err:
+						cancel()
+					default:
+					}
+					return
+				}
+			}
+		}()
+	}
+
+	walkErr := filepath.Walk(localDir, func(fp string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
+
 		if info.IsDir() {
 			return nil
 		}
+
 		rel, err := filepath.Rel(localDir, fp)
 		if err != nil {
 			return err
 		}
+
 		key := path.Join(s3Prefix, filepath.ToSlash(rel))
-		return p.uploadFileWithRetry(ctx, fp, key)
+
+		select {
+		case jobs <- uploadJob{filePath: fp, key: key}:
+			return nil
+		case <-ctx.Done():
+			return ctx.Err()
+		}
 	})
+
+	close(jobs)
+	wg.Wait()
+
+	if walkErr != nil {
+		return walkErr
+	}
+
+	select {
+	case err := <-errCh:
+		return err
+	default:
+		return nil
+	}
 }
 
 func (p *Processor) uploadFileWithRetry(ctx context.Context, filePath, key string) error {
 	var last error
+
 	for attempt := 1; attempt <= 3; attempt++ {
 		last = p.uploadFile(ctx, filePath, key)
 		if last == nil {
 			log.Printf("uploaded %s", key)
 			return nil
 		}
+
 		log.Printf("upload failed %s attempt %d: %v", key, attempt, last)
-		time.Sleep(time.Duration(attempt) * 2 * time.Second)
+
+		if attempt < 3 {
+			select {
+			case <-time.After(time.Duration(attempt) * 2 * time.Second):
+			case <-ctx.Done():
+				return ctx.Err()
+			}
+		}
 	}
+
 	return last
 }
 
