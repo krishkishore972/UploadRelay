@@ -20,10 +20,10 @@ func NewAsynqClient(cfg config.Config) *asynq.Client {
 }
 func NewAsynqServer(cfg config.Config) *asynq.Server {
 	return asynq.NewServer(redisOpt(cfg), asynq.Config{
-		Concurrency: 1,
-		HealthCheckInterval: 60 * time.Second,
-		DelayedTaskCheckInterval: 60 * time.Second,
+		Concurrency:              1,
+		TaskCheckInterval:        30 * time.Second,
+		HealthCheckInterval:      5 * time.Minute,
+		DelayedTaskCheckInterval: 5 * time.Minute,
+		JanitorInterval:          10 * time.Minute,
 	})
 }
-
-
