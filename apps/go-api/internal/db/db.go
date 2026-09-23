@@ -15,8 +15,8 @@ func Connect(databaseurl string) (*sql.DB, error) {
 		return nil,fmt.Errorf("sql.open: %w",err)
 
 	}
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
+	db.SetMaxOpenConns(10)
+	db.SetMaxIdleConns(10)
 	db.SetConnMaxLifetime(5 *time.Minute)
 
 	// fail fast
