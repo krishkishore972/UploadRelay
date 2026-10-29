@@ -11,9 +11,11 @@ import (
 	"go-api/internal/config"
 	tokencrypto "go-api/internal/crypto"
 	"go-api/internal/middleware"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
@@ -85,6 +87,16 @@ func (h *YouTubeHandler) StartOAuth(w http.ResponseWriter, r *http.Request) {
 		time.Now().Add(10*time.Minute),
 	)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			// Stale session: the JWT subject is not in this database (web app
+			// pointed at a different DB, or the user was deleted/reset).
+			writeJSON(w, http.StatusUnauthorized, map[string]string{
+				"error": "Session user not found, sign in again",
+			})
+			return
+		}
+		log.Printf("start oauth: save state for user %s: %v", userID, err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Failed to save oauth state"})
 		return
 	}

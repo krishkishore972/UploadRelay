@@ -1,7 +1,13 @@
 import axios from "axios";
 
+// NEXT_PUBLIC_* values are inlined by Next.js at build/start time, so changing
+// this requires restarting `next dev` (or rebuilding on Vercel).
+const baseURL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "development" ? "http://localhost:8000" : undefined);
+
 export const goApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL,
 });
 
 let token: string | null = null;

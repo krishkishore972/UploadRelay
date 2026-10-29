@@ -10,6 +10,7 @@ import {
   Link2,
   RefreshCw,
   ShieldCheck,
+  TriangleAlert,
   User as UserIcon,
 } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -256,6 +257,21 @@ export function VideoDetail({ videoId }: { videoId: string }) {
           <Card className="min-w-0 overflow-hidden border-neutral-900 bg-neutral-950">
             {src ? (
               <HlsPlayer src={src} className="!rounded-none" />
+            ) : video.status === "TRANSCODE_FAILED" ? (
+              <div className="flex aspect-video flex-col items-center justify-center gap-3 px-4 text-center text-red-400">
+                <TriangleAlert className="size-6" aria-hidden="true" />
+                <p className="max-w-xs text-[13px] leading-6 sm:text-sm">
+                  Preview unavailable — the transcode job failed. The original
+                  file is still stored.
+                </p>
+              </div>
+            ) : video.status === "UPLOAD_ABORTED" ? (
+              <div className="flex aspect-video flex-col items-center justify-center gap-3 px-4 text-center text-neutral-500">
+                <TriangleAlert className="size-6" aria-hidden="true" />
+                <p className="max-w-xs text-[13px] leading-6 sm:text-sm">
+                  Preview unavailable — the upload was aborted.
+                </p>
+              </div>
             ) : (
               <div className="flex aspect-video flex-col items-center justify-center gap-3 px-4 text-center text-neutral-500">
                 <RefreshCw className="size-6 animate-spin" aria-hidden="true" />
@@ -445,7 +461,13 @@ export function VideoDetail({ videoId }: { videoId: string }) {
               </DetailRow>
               <Separator />
               <DetailRow icon={<RefreshCw className="size-3.5" />} label="Preview">
-                {video.masterPlaylistKey ? "HLS ready" : "Generating"}
+                {video.masterPlaylistKey
+                  ? "HLS ready"
+                  : video.status === "TRANSCODE_FAILED"
+                    ? "Failed"
+                    : video.status === "UPLOAD_ABORTED"
+                      ? "Not generated"
+                      : "Generating"}
               </DetailRow>
             </CardContent>
           </Card>

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"log"
+	"os/exec"
 
 	"go-api/internal/config"
 	"go-api/internal/db"
@@ -23,6 +24,15 @@ import (
 
 func main() {
 	log.Println("worker is running")
+
+	// Without ffmpeg every transcode task fails immediately and the only visible
+	// symptom is a video flipping to TRANSCODE_FAILED, so fail fast instead.
+	ffmpegPath, err := exec.LookPath("ffmpeg")
+	if err != nil {
+		log.Fatalf("ffmpeg not found in PATH (%v). Install it (e.g. `sudo apt install ffmpeg`) and restart the worker.", err)
+	}
+	log.Printf("using ffmpeg: %s", ffmpegPath)
+
 	cfg := config.MustLoad()
 
 	database, err := db.Connect(cfg.DatabaseUrl)
